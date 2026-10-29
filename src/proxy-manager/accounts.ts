@@ -114,9 +114,15 @@ export function upstreamAccounts(configSource: OcxConfig | (() => OcxConfig)): A
   const config = () => (typeof configSource === "function" ? configSource() : configSource);
   return {
     list: () => {
-      const accounts: ReturnType<AccountSource["list"]> = rows(config(), false).map(({ account, label, alias, email }) => ({ account, label, alias, email }));
+      const current = config();
+      // Native Codex login stages its grant in the generic ChatGPT OAuth store before
+      // committing a pool row. This is not another managed account. Keep wire resolution
+      // and credentials intact; an explicitly configured ChatGPT provider remains visible.
+      const accounts: ReturnType<AccountSource["list"]> = rows(current, false)
+        .filter(({ account }) => account.kind !== "oauth" || account.provider !== "chatgpt" || !!current.providers.chatgpt)
+        .map(({ account, label, alias, email }) => ({ account, label, alias, email }));
       for (const provider of new Set([
-        ...Object.keys(config().providers),
+        ...Object.keys(current.providers),
         ...PROVIDER_REGISTRY.filter((p) => p.oauthId).map((p) => p.oauthId!),
       ]))
         accounts.push({ account: { kind: "oauth", provider, id: "@new" }, label: "@new" });

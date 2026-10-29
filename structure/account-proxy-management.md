@@ -9,7 +9,7 @@ core-owned transport seam; the seam imports no database, account store, UI or pr
 An account key is the JSON tuple `(kind, provider, id)`. Kinds are `oauth`, `codex` and `key`.
 OAuth slot IDs, native Codex pool IDs (`__main__` for main), and API-key pool IDs remain upstream
 identities. `accounts.ts` is the adapter to `src/oauth/store.ts`, `src/codex/account-store.ts`,
-native main auth, and configured API-key references. Public account rows contain no credentials.
+native main auth, and configured API-key references. Public account rows contain no credentials. Generic `chatgpt` OAuth staging rows are omitted from the management list unless a standalone provider is configured; wire matching and stored credentials remain unchanged. Explicit historical bindings stay available as retained orphan rows until cleared. Native slots and other providers are never merged by email.
 Keychain/environment references resolve through the existing key resolver for wire matching.
 
 Precedence is account binding, managed provider default (`oauth/provider/@new`), then the existing

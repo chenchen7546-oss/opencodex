@@ -7,6 +7,9 @@ import { getProxyManager } from "../../src/proxy-manager/runtime";
 import { runOptionalShutdownHooks, resetOptionalShutdownHooksForTests } from "../../src/lib/optional-shutdown-hooks";
 import type { ManagementContext } from "../../src/server/management/context";
 import type { OcxConfig } from "../../src/types";
+import { getAccountSet, getCredential, saveCredential } from "../../src/oauth/store";
+import { saveCodexAccountCredential } from "../../src/codex/account-store";
+import { upstreamAccounts } from "../../src/proxy-manager/accounts";
 
 const originalHome = process.env.OPENCODEX_HOME;
 const roots: string[] = [];
@@ -133,4 +136,52 @@ test("bulk import rejects the entire batch; SQLite statistics and bindings survi
   expect(restored.store.choice(account)).toEqual({ mode: "proxy", proxyId: id });
   expect((await request("/traffic?days=1")).body.totals[0]).toMatchObject({ download: 5, requests: 1 });
   expect((await request("/settings", "PATCH", { retentionDays: 0 })).response.status).toBe(400);
+});
+
+test("native Codex login staging is hidden without merging same-email accounts or changing credentials", async () => {
+  const { request, config } = setup();
+  const email = "same-member@example.test";
+  const stagedCredential = { access: "fixture-staged-access", refresh: "fixture-staged-refresh", expires: Date.now() + 3600000, email, accountId: "fixture-tenant" };
+  await saveCredential("chatgpt", stagedCredential);
+  await saveCredential("kimi", { ...stagedCredential, access: "fixture-kimi-access", accountId: "fixture-kimi" });
+  const before = await request();
+  expect(before.body.accounts.filter((row: any) => row.account.provider === "chatgpt")).toEqual([]);
+  config.providers.openai = { adapter: "openai-responses", baseUrl: "https://chatgpt.com/backend-api/codex", authMode: "forward" };
+  config.codexAccounts = [
+    { id: "pool-personal", email, isMain: false },
+    { id: "pool-workspace", email, isMain: false },
+  ];
+  for (const account of config.codexAccounts) saveCodexAccountCredential(account.id, {
+    accessToken: `fixture-${account.id}`, refreshToken: `refresh-${account.id}`, expiresAt: Date.now() + 3600000, chatgptAccountId: account.id,
+  });
+  const view = (await request()).body;
+  const native = view.accounts.filter((row: any) => row.account.kind === "codex");
+  expect(native.map((row: any) => row.account.id).sort()).toEqual(["pool-personal", "pool-workspace"]);
+  expect(view.accounts.filter((row: any) => row.account.provider === "chatgpt")).toEqual([]);
+  expect(view.accounts.some((row: any) => row.account.provider === "kimi" && row.email === email)).toBe(true);
+  expect(getCredential("chatgpt")).toMatchObject(stagedCredential);
+  expect(upstreamAccounts(config).resolve("https://auth.openai.com/oauth/token", {
+    body: JSON.stringify({ refresh_token: stagedCredential.refresh }),
+  }, "chatgpt")).toHaveLength(1);
+  const proxy = (await request("/profiles", "POST", { name: "account-exit", url: "http://127.0.0.1:3128" })).body.id;
+  expect((await request("/bindings", "PUT", { accounts: [native[0].account], choice: { mode: "proxy", proxyId: proxy } })).response.status).toBe(200);
+  expect((await request()).body.accounts.find((row: any) => row.account.id === native[0].account.id).choice).toEqual({ mode: "proxy", proxyId: proxy });
+});
+
+test("explicit standalone ChatGPT providers and retained old staging bindings remain manageable", async () => {
+  const { request, config } = setup();
+  await saveCredential("chatgpt", { access: "fixture-chatgpt", refresh: "fixture-refresh", expires: Date.now() + 3600000 });
+  const id = getAccountSet("chatgpt")!.activeAccountId!;
+  const account = { kind: "oauth" as const, provider: "chatgpt", id };
+  const manager = getProxyManager(config, true)!;
+  manager.store.bind([account], { mode: "direct" });
+  let rows = (await request()).body.accounts;
+  expect(rows.find((row: any) => row.account.id === id)).toMatchObject({ orphaned: true, choice: { mode: "direct" } });
+  expect((await request("/bindings", "PUT", { accounts: [account], choice: { mode: "inherit" } })).response.status).toBe(200);
+  expect((await request()).body.accounts.some((row: any) => row.account.provider === "chatgpt")).toBe(false);
+  config.providers.chatgpt = { adapter: "openai-responses", baseUrl: "https://chatgpt.com/backend-api/codex", authMode: "oauth" };
+  rows = (await request()).body.accounts;
+  expect(rows.find((row: any) => row.account.id === id)).toMatchObject({ account, choice: { mode: "inherit" } });
+  expect(rows.find((row: any) => row.account.id === id).orphaned).toBeUndefined();
+  expect(rows.some((row: any) => row.account.provider === "chatgpt" && row.account.id === "@new")).toBe(true);
 });

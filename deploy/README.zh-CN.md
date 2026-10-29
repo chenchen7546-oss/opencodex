@@ -5,7 +5,7 @@
 
 ## 1. 本次交付与边界
 
-- 镜像：`opencodex-custom:20261029-5`，Linux amd64。镜像的确切 ID 见部署包 `release.json`。
+- 镜像：`opencodex-custom:20261029-6`，Linux amd64。镜像的确切 ID 见部署包 `release.json`。
 - 集成 Mihomo 1.19.33，构建时从官方 release 下载并核对固定 SHA-256；许可证在镜像 `/usr/share/licenses/mihomo/`。
 - 普通 HTTP/HTTPS/SOCKS5/SOCKS5h 不启动内核；高级节点按需启动一个进程，不启用 TUN，不暴露控制器端口。
 - 独立代理管理、账号绑定、跨提供商批量分配、订阅手动更新、出口检测、流量统计与限额均在管理页面操作。
@@ -56,21 +56,21 @@ Docker 29 的存储可能同时涉及 `/var/lib/docker` 与 `/var/lib/containerd
 
 ## 3. 上传并验证部署包
 
-本机生成目录为 `dist/custom/opencodex-custom-20261029-5/`，里面包含镜像归档、Compose、环境变量示例、本指南、版本和验收记录。
+本机生成目录为 `dist/custom/opencodex-custom-20261029-6/`，里面包含镜像归档、Compose、环境变量示例、本指南、版本和验收记录。
 先在服务器创建部署父目录，然后在 Windows PowerShell 上传；替换 `SERVER_IP` 和登录用户：
 
 ```powershell
 ssh root@SERVER_IP "mkdir -p /opt/opencodex-custom/releases"
-scp -r .\dist\custom\opencodex-custom-20261029-5 root@SERVER_IP:/opt/opencodex-custom/releases/
+scp -r .\dist\custom\opencodex-custom-20261029-6 root@SERVER_IP:/opt/opencodex-custom/releases/
 ```
 
 在服务器运行：
 
 ```bash
-cd /opt/opencodex-custom/releases/opencodex-custom-20261029-5
+cd /opt/opencodex-custom/releases/opencodex-custom-20261029-6
 sha256sum -c SHA256SUMS
 sudo docker load --input opencodex-image.tar.gz
-sudo docker image inspect opencodex-custom:20261029-5 --format '{{.Id}} {{.Os}}/{{.Architecture}}'
+sudo docker image inspect opencodex-custom:20261029-6 --format '{{.Id}} {{.Os}}/{{.Architecture}}'
 cat release.json
 ```
 
@@ -189,12 +189,12 @@ umask 077
 backup_dir="/opt/opencodex/backups/$(date -u +%Y%m%dT%H%M%SZ)"
 mkdir -p "$backup_dir"
 dc stop
-sudo docker run --rm --user 0 --entrypoint tar --mount type=volume,source=opencodex-custom_ocx-state,target=/state,readonly opencodex-custom:20261029-5 -C /state -czf - . > "$backup_dir/ocx-state.tar.gz"
-sudo docker run --rm --user 0 --entrypoint tar --mount type=volume,source=opencodex-custom_codex-state,target=/state,readonly opencodex-custom:20261029-5 -C /state -czf - . > "$backup_dir/codex-state.tar.gz"
+sudo docker run --rm --user 0 --entrypoint tar --mount type=volume,source=opencodex-custom_ocx-state,target=/state,readonly opencodex-custom:20261029-6 -C /state -czf - . > "$backup_dir/ocx-state.tar.gz"
+sudo docker run --rm --user 0 --entrypoint tar --mount type=volume,source=opencodex-custom_codex-state,target=/state,readonly opencodex-custom:20261029-6 -C /state -czf - . > "$backup_dir/codex-state.tar.gz"
 tar -tzf "$backup_dir/ocx-state.tar.gz" >/dev/null
 tar -tzf "$backup_dir/codex-state.tar.gz" >/dev/null
 cp .env "$backup_dir/deploy.env"
-sudo docker image inspect opencodex-custom:20261029-5 --format '{{.Id}}' > "$backup_dir/image-id.txt"
+sudo docker image inspect opencodex-custom:20261029-6 --format '{{.Id}}' > "$backup_dir/image-id.txt"
 dc start
 ```
 
@@ -206,8 +206,8 @@ dc start
 ```bash
 sudo docker volume create opencodex-restore_ocx-state
 sudo docker volume create opencodex-restore_codex-state
-sudo docker run --rm -i --user 0 --entrypoint tar --mount type=volume,source=opencodex-restore_ocx-state,target=/state opencodex-custom:20261029-5 -C /state -xzpf - < "$backup_dir/ocx-state.tar.gz"
-sudo docker run --rm -i --user 0 --entrypoint tar --mount type=volume,source=opencodex-restore_codex-state,target=/state opencodex-custom:20261029-5 -C /state -xzpf - < "$backup_dir/codex-state.tar.gz"
+sudo docker run --rm -i --user 0 --entrypoint tar --mount type=volume,source=opencodex-restore_ocx-state,target=/state opencodex-custom:20261029-6 -C /state -xzpf - < "$backup_dir/ocx-state.tar.gz"
+sudo docker run --rm -i --user 0 --entrypoint tar --mount type=volume,source=opencodex-restore_codex-state,target=/state opencodex-custom:20261029-6 -C /state -xzpf - < "$backup_dir/codex-state.tar.gz"
 sudo docker compose --project-name opencodex-restore --env-file .env -f compose.yaml up -d --wait --no-build
 ```
 
@@ -226,8 +226,8 @@ sudo docker compose --project-name opencodex-restore --env-file .env -f compose.
 ```bash
 bun scripts/generate-compatibility-version.ts
 docker compose -f deploy/compose.build.yaml build hub
-bun scripts/custom/docker-smoke.ts opencodex-custom:20261029-5
-bun scripts/custom/export-image.ts opencodex-custom:20261029-5
+bun scripts/custom/docker-smoke.ts opencodex-custom:20261029-6
+bun scripts/custom/export-image.ts opencodex-custom:20261029-6
 ```
 
 导出脚本要求镜像 ID 与成功验收记录相同；已有输出目录不会被覆盖。修改源码后使用新标签并重新验收。
