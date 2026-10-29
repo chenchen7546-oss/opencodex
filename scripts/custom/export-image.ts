@@ -8,7 +8,7 @@ import { pipeline } from "node:stream/promises";
 import { createGzip } from "node:zlib";
 
 const root = resolve(import.meta.dir, "../..");
-const image = process.argv[2] ?? "opencodex-custom:20261029-4";
+const image = process.argv[2] ?? "opencodex-custom:20261029-5";
 if (!/^[a-zA-Z0-9][a-zA-Z0-9._/:@-]*$/.test(image))
   throw new Error("Invalid image reference");
 const inspect = Bun.spawn(["docker", "image", "inspect", image], {

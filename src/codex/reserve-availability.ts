@@ -1,4 +1,5 @@
 import { fetch } from "../lib/account-fetch";
+import { accountEgressInit } from "../lib/account-egress";
 import { createHmac, randomBytes } from "node:crypto";
 import { readBoundedResponseBody } from "../lib/bounded-body";
 import {
@@ -132,6 +133,7 @@ async function readAuthorization(slot: Slot, input: Input & { writer: MainQuotaW
   });
   const operation = (async () => {
     const response = await fetch(USAGE_URL, {
+      ...accountEgressInit({ account: { kind: "codex", provider: "openai", id: "__main__" }, purpose: "quota" }),
       method: "GET", redirect: "error", signal: controller.signal,
       headers: {
         authorization: `Bearer ${input.token.accessToken}`,

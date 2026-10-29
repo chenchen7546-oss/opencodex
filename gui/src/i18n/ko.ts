@@ -2288,6 +2288,7 @@ export const ko: Record<TKey, string> = {
   "codexAuth.oauthCodeSubmitted": "코드를 제출했습니다 — 로그인 완료를 기다리는 중입니다…",
   "codexAuth.oauthStatusRetrying": "로그인 상태를 확인하는 중 네트워크 또는 프록시 오류가 발생했습니다 — 재시도 중…",
   "codexAuth.oauthCancelled": "로그인이 취소되었습니다.",
+  "codexAuth.warmupNetworkFailed": "계정 네트워크 확인에 실패했습니다. 지정된 프록시(새 계정은 OpenAI 기본 프록시)를 확인한 후 로그인을 다시 시도하세요. 이 네트워크 오류는 토큰 만료를 의미하지 않습니다.",
   "codexAuth.loginFailed": "로그인에 실패했습니다",
   "codexAuth.needsReauth": "재로그인",
   "codexAuth.reauthenticate": "Re-authenticate",

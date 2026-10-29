@@ -76,6 +76,15 @@ export class ProxyManager {
     next: EgressSend,
     scope?: EgressScope,
   ): Promise<Response> {
+    return this.sendAttempt(input, init, next, scope, 0);
+  }
+  private async sendAttempt(
+    input: RequestInfo | URL,
+    init: RequestInit | undefined,
+    next: EgressSend,
+    scope: EgressScope | undefined,
+    routeChanges: number,
+  ): Promise<Response> {
     const { account, choice } = this.resolve(input, init, scope);
     if (choice.mode === "inherit") return next(input, init);
     const profile = choice.mode === "proxy" ? this.store.profile(choice.proxyId) : undefined;
@@ -90,6 +99,21 @@ export class ProxyManager {
       throw new ProxyManagerError("proxy_traffic_limit", 429);
     const lease = profile?.node ? await this.core?.acquire(profile.id) : undefined;
     if (profile?.node && !lease) throw new ProxyManagerError("proxy_core_not_installed", 503);
+    // Core startup yields. Recheck a binding/profile changed while waiting before sending
+    // credentials; existing response streams retain their already-acquired route.
+    if (lease) {
+      let changed: boolean;
+      try {
+        const current = this.resolve(input, init, scope);
+        changed = JSON.stringify(current) !== JSON.stringify({ account, choice })
+          || JSON.stringify(this.store.profile(profile!.id)) !== JSON.stringify(profile);
+      } catch (error) { lease.release(); throw error; }
+      if (changed) {
+        lease.release();
+        if (routeChanges >= 3) throw new ProxyManagerError("proxy_binding_changed", 503);
+        return this.sendAttempt(input, init, next, scope, routeChanges + 1);
+      }
+    }
     const proxy = lease?.url ?? profile?.url ?? false;
     const id = profile?.id ?? "direct",
       key = account ? accountKey(account) : "probe",

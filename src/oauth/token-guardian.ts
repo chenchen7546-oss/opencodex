@@ -191,6 +191,7 @@ export async function guardianSweep(nowMs: number = Date.now()): Promise<Guardia
             const mainToken = getMainAccountToken();
             if (!mainToken) return;
             await warmCodexAccount({
+              poolAccountId: MAIN_CODEX_ACCOUNT_ID,
               accessToken: mainToken.accessToken,
               chatgptAccountId: mainToken.chatgptAccountId,
               model: opts.codexWarmupModel,
@@ -243,6 +244,7 @@ export async function guardianSweep(nowMs: number = Date.now()): Promise<Guardia
             && !current.codexValidationPending && current.generation === token.generation) {
             warmupGeneration = token.generation;
             await warmCodexAccount({
+              poolAccountId: id,
               accessToken: token.accessToken,
               chatgptAccountId: token.chatgptAccountId,
               model: opts.codexWarmupModel,

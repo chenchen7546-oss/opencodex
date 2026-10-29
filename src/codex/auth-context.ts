@@ -1,4 +1,6 @@
 import { bindPoolCreditPolicy, poolCreditHoldResetAt, poolContextCreditHoldResetAt, poolCreditRecoveryNeeded, poolContextCreditRecoveryNeeded, poolCreditRecoveryRetryAt } from "./pool-credit-policy";
+import { withNativeAccountEgress } from "./account-egress-context";
+export { stripCodexRuntimeProviderFields } from "./account-egress-context";
 import { hasSpendableCodexCredits } from "./quota-types";
 import { nextQuotaQueryDelay } from "./quota-query-backoff";
 import { noteMainAccountActivity } from "./main-account-external-usage";
@@ -1790,14 +1792,14 @@ export function applyCodexAuthContextToProvider(
   if (mode !== "pool" || (ctx.kind !== "pool" && ctx.kind !== "main-pool") || provider.authMode !== "forward") return provider;
   assertCodexAccountValidationReady(ctx.accountId);
   if (ctx.kind === "pool") assertPoolAccountCredits(ctx.accountId, poolContextCreditHoldResetAt(ctx), poolContextCreditRecoveryNeeded(ctx), ctx.quotaScope);
-  return {
+  return withNativeAccountEgress({
     ...provider,
     _codexAccountOverride: {
       accessToken: ctx.accessToken,
       chatgptAccountId: ctx.chatgptAccountId,
     },
     _codexAccountRequired: true,
-  };
+  }, ctx.accountId);
 }
 
 export class CodexMainSubstitutionUnavailableError extends Error {
@@ -1987,13 +1989,4 @@ export function isCodexAuthContextUsable(ctx: CodexAuthContext, config: OcxConfi
   if (ctx.kind === "main") return true;
   if (ctx.kind === "main-pool") return isCodexAccountUsable(config, ctx.accountId);
   return isCodexAccountUsable(config, ctx.accountId) && isCodexAccountGenerationLive(ctx.accountId, ctx.generation);
-}
-
-export function stripCodexRuntimeProviderFields(provider: OcxProviderConfig): OcxProviderConfig {
-  const {
-    _codexAccountOverride: _override,
-    _codexAccountRequired: _required,
-    ...safeProvider
-  } = provider as OcxRuntimeProviderConfig;
-  return safeProvider;
 }

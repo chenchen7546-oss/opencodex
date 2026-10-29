@@ -229,6 +229,7 @@ export function useAddCodexAccountOAuth({
             const st = await readJsonIfOk<{
               status: string;
               error?: string;
+              code?: string;
               catalogRefreshPending?: unknown;
               validationPending?: unknown;
             }>(stRes);
@@ -261,7 +262,8 @@ export function useAddCodexAccountOAuth({
               dispatch({ type: "set-flow-id", flowId: null });
               if (aliveRef.current) {
                 if (!reauthAccountId) dispatch({ type: "set-step", step: "pick" });
-                dispatch({ type: "set-error", error: st.error ?? t("codexAuth.loginFailed") });
+                dispatch({ type: "set-error", error: st.code === "codex_warmup_transport_failed"
+                  ? t("codexAuth.warmupNetworkFailed") : st.error ?? t("codexAuth.loginFailed") });
               }
             }
           } catch (e) {

@@ -2261,6 +2261,7 @@ export const zh: Record<TKey, string> = {
   "codexAuth.oauthCodeSubmitted": "代码已提交——正在等待登录完成…",
   "codexAuth.oauthStatusRetrying": "检查登录状态时发生网络或代理错误——正在重试…",
   "codexAuth.oauthCancelled": "登录已取消。",
+  "codexAuth.warmupNetworkFailed": "账号网络验证失败。请检查绑定代理（新账号使用 OpenAI 提供商默认代理），恢复连接后重试登录。此次网络失败不代表令牌已过期。",
   "codexAuth.loginFailed": "登录失败",
   "codexAuth.needsReauth": "重新登录",
   "codexAuth.reauthenticate": "重新认证",

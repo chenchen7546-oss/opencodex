@@ -10,7 +10,7 @@ services:
       args:
         BUILDKIT_CONTEXT_KEEP_GIT_DIR: "1"
   hub:
-    image: ${OPENCODEX_IMAGE:-opencodex-custom:20261029-4}
+    image: ${OPENCODEX_IMAGE:-opencodex-custom:20261029-5}
     platform: ${OPENCODEX_PLATFORM:-linux/amd64}
     build:
       context: ..

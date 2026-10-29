@@ -2845,6 +2845,7 @@ export const pt: Record<TKey, string> = {
   "codexAuth.oauthCodeSubmitted": "Código enviado — aguardando a conclusão do login…",
   "codexAuth.oauthStatusRetrying": "Erro de rede ou de proxy ao verificar o status do login — tentando novamente…",
   "codexAuth.oauthCancelled": "O login foi cancelado.",
+  "codexAuth.warmupNetworkFailed": "A verificação de rede da conta falhou. Verifique o proxy vinculado (ou o padrão da OpenAI para uma nova conta) e tente entrar novamente. Esta falha de rede não significa que o token expirou.",
   "codexAuth.loginFailed": "Falha no login",
   "codexAuth.needsReauth": "Refazer login",
   "codexAuth.reauthenticate": "Reautenticar",

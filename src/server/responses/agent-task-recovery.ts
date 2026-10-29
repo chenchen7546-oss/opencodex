@@ -1,4 +1,6 @@
 import { createHash, createHmac, randomBytes } from "node:crypto";
+import { fetch } from "../../lib/account-fetch";
+import { accountEgressInit } from "../../lib/account-egress";
 import { decodeJwtPayload, extractAccountId } from "../../oauth/chatgpt";
 import type { OcxConfig } from "../../types";
 import { boundedBodyDecodeFailure, readBoundedResponseBody } from "../../lib/bounded-body";
@@ -478,6 +480,7 @@ async function attemptRecovery(
   });
   try {
     const response = await fetch(RECOVERY_ENDPOINT, {
+      ...accountEgressInit({ provider: "openai", purpose: "model" }),
       method: "POST",
       headers: admission.headers,
       body: recoveryPayload(envelope, options.model ?? "gpt-5.6-sol"),

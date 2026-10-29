@@ -2790,6 +2790,7 @@ export const ru: Record<TKey, string> = {
   "codexAuth.oauthCodeSubmitted": "Код отправлен — ждём завершения входа…",
   "codexAuth.oauthStatusRetrying": "При проверке статуса входа возникла сетевая ошибка или ошибка прокси — повторяем…",
   "codexAuth.oauthCancelled": "Вход отменён.",
+  "codexAuth.warmupNetworkFailed": "Не удалось проверить соединение аккаунта. Проверьте назначенный прокси (для нового аккаунта — прокси OpenAI по умолчанию), затем повторите вход. Эта сетевая ошибка не означает, что токен истёк.",
   "codexAuth.loginFailed": "Не удалось войти",
   "codexAuth.needsReauth": "Повторный вход",
   "codexAuth.reauthenticate": "Переавторизоваться",

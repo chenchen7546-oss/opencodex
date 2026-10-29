@@ -1,4 +1,5 @@
 import { fetch } from "../../lib/account-fetch";
+import { accountEgressInit } from "../../lib/account-egress";
 import { codexAccountUsesCreditsAfterLimit } from "../account-credit-use";
 import { getValidCodexToken, isCodexAccountGenerationLive, readCodexAccountRecord, CodexCredentialGenerationConflictError } from "../account-store";
 import { isCompleteCodexQuotaRecoverySnapshot } from "../quota";
@@ -135,6 +136,7 @@ export function createResetCreditWhamClient(config: OcxConfig, accountId: string
   return {
     inspect: () => run(async auth => {
       const resp = await fetch("https://chatgpt.com/backend-api/wham/rate-limit-reset-credits", {
+        ...accountEgressInit({ account: { kind: "codex", provider: "openai", id: accountId }, purpose: "quota" }),
         headers: { Authorization: `Bearer ${auth.accessToken}`, "ChatGPT-Account-Id": auth.chatgptAccountId },
         signal: AbortSignal.timeout(8000),
       });
@@ -145,6 +147,7 @@ export function createResetCreditWhamClient(config: OcxConfig, accountId: string
     }),
     consume: redeemRequestId => run(async auth => {
       const resp = await fetch("https://chatgpt.com/backend-api/wham/rate-limit-reset-credits/consume", {
+        ...accountEgressInit({ account: { kind: "codex", provider: "openai", id: accountId }, purpose: "quota" }),
         method: "POST",
         headers: {
           Authorization: `Bearer ${auth.accessToken}`,
@@ -279,6 +282,7 @@ export async function inspectResetCredits(config: OcxConfig, accountId: string, 
         resp = await fetch(
           "https://chatgpt.com/backend-api/wham/rate-limit-reset-credits",
           {
+            ...accountEgressInit({ account: { kind: "codex", provider: "openai", id: accountId }, purpose: "quota" }),
             headers: {
               Authorization: `Bearer ${auth.accessToken}`,
               "ChatGPT-Account-Id": auth.chatgptAccountId,
@@ -366,6 +370,7 @@ export async function consumeResetCredits(config: OcxConfig, accountId: string, 
         resp = await fetch(
           "https://chatgpt.com/backend-api/wham/rate-limit-reset-credits/consume",
           {
+            ...accountEgressInit({ account: { kind: "codex", provider: "openai", id: accountId }, purpose: "quota" }),
             method: "POST",
             headers: {
               Authorization: `Bearer ${auth.accessToken}`,

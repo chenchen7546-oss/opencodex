@@ -116,3 +116,9 @@ If the browser refuses both methods, a selectable full-link field appears for ma
 
 Subscription import accepts built-in Shadowsocks obfs, v2ray-plugin, gost-plugin and shadow-tls options, TUIC request timeout and AnyTLS idle-session options. Legacy top-level brutal options are moved under smux; null VLESS flow is omitted. Executable plugins and filesystem credential paths remain disallowed. Adding the same subscription URL again returns a duplicate notice without creating a record.
 Account bindings show aliases and returned email addresses first, with shortened internal IDs underneath. Providers that return neither remain explicitly unnamed; use Edit alias in the row to name them. Aliases are shared with the provider account page and do not change proxy bindings. The main native Codex account retains its upstream read-only alias policy.
+
+## Login verification and switching proxies
+
+New Codex logins use the OpenAI provider default for server-side OAuth, quota checks and model verification. Reauthentication and background refresh/validation use the existing account binding. A network verification failure asks you to check that route; it does not by itself mean that the login token expired.
+
+Saving an account binding takes effect for subsequent server requests, including retries, refresh and quota queries. No service restart or new login is needed. An already-running model stream completes on its original connection; its next request uses the new proxy. Disabled or unavailable bound proxies refuse requests without silently going direct. Switching between existing nodes leaves active streams running; changing advanced node definitions may temporarily report a busy core until those streams finish. Browser login pages still use the browser device’s network.

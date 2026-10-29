@@ -1,4 +1,5 @@
 import { fetch } from "../lib/account-fetch";
+import { accountEgressInit } from "../lib/account-egress";
 import { readBoundedResponseBody } from "../lib/bounded-body";
 
 export class CodexWarmupError extends Error {
@@ -19,6 +20,8 @@ export class CodexWarmupError extends Error {
 }
 
 export interface CodexWarmupOptions {
+  /** Native pool identity (including __main__), distinct from the ChatGPT tenant ID. */
+  poolAccountId?: string;
   accessToken: string;
   chatgptAccountId: string;
   model?: string;
@@ -249,6 +252,9 @@ async function tryWarmup(options: CodexWarmupOptions, model: string): Promise<vo
     let res: Response;
     try {
       res = await fetch(CODEX_RESPONSES_URL, {
+        ...accountEgressInit({ account: options.poolAccountId
+          ? { kind: "codex", provider: "openai", id: options.poolAccountId } : undefined,
+          provider: "openai", purpose: "model" }),
         method: "POST",
         headers: {
           Authorization: `Bearer ${options.accessToken}`,

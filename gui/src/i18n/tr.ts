@@ -2818,6 +2818,7 @@ export const tr: Record<TKey, string> = {
   "codexAuth.oauthCodeSubmitted": "Kod gönderildi — giriş bitmesi bekleniyor…",
   "codexAuth.oauthStatusRetrying": "Durum kontrol edilirken hata — tekrar deneniyor…",
   "codexAuth.oauthCancelled": "Giriş iptal edildi.",
+  "codexAuth.warmupNetworkFailed": "Hesabın ağ doğrulaması başarısız oldu. Atanan proxy’yi (yeni hesap için OpenAI varsayılan proxy’sini) kontrol edip yeniden giriş yapın. Bu ağ hatası belirtecin süresinin dolduğu anlamına gelmez.",
   "codexAuth.loginFailed": "Giriş başarısız oldu",
   "codexAuth.needsReauth": "Tekrar Giriş Yap",
   "codexAuth.reauthenticate": "Yeniden Doğrula",

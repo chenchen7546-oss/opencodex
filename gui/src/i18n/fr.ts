@@ -2800,6 +2800,7 @@ export const fr: Record<TKey, string> = {
   "codexAuth.oauthCodeSubmitted": "Code envoyé — en attente de la fin de la connexion…",
   "codexAuth.oauthStatusRetrying": "Erreur réseau ou de proxy lors de la vérification de l’état de la connexion — nouvelle tentative…",
   "codexAuth.oauthCancelled": "La connexion a été annulée.",
+  "codexAuth.warmupNetworkFailed": "La vérification réseau du compte a échoué. Vérifiez le proxy associé (ou le proxy OpenAI par défaut pour un nouveau compte), puis réessayez la connexion. Cette erreur réseau ne signifie pas que le jeton a expiré.",
   "codexAuth.loginFailed": "Échec de la connexion",
   "codexAuth.needsReauth": "Se reconnecter",
   "codexAuth.reauthenticate": "Se réauthentifier",

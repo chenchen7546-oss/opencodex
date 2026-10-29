@@ -50,10 +50,16 @@ export async function verifyCodexAccountWarmup(
   chatgptAccountId: string,
 ): Promise<{ ok: true; validatedAt: number } | { ok: false; response: Response }> {
   try {
-    await warmCodexAccount({ accessToken, chatgptAccountId });
+    await warmCodexAccount({ accessToken, chatgptAccountId, poolAccountId: accountId });
     return { ok: true, validatedAt: Date.now() };
   } catch (err) {
     const reason = codexWarmupFailureReason(err);
+    if (reason === "transport") {
+      return { ok: false, response: jsonResponse({
+        error: "Codex account network verification failed. Check the account or provider proxy and retry; this does not mean the login token expired.",
+        code: "codex_warmup_transport_failed", reason, accountId,
+      }, 502) };
+    }
     if (err instanceof CodexWarmupError && err.code === "http_status" && err.status === 429) {
       return {
         ok: false,

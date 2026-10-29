@@ -2244,6 +2244,7 @@ export const de: Record<TKey, string> = {
   "codexAuth.oauthCodeSubmitted": "Code gesendet — warte auf Abschluss der Anmeldung…",
   "codexAuth.oauthStatusRetrying": "Beim Prüfen des Login-Status ist ein Netzwerk- oder Proxyfehler aufgetreten — erneuter Versuch…",
   "codexAuth.oauthCancelled": "Login wurde abgebrochen.",
+  "codexAuth.warmupNetworkFailed": "Die Netzwerkprüfung des Kontos ist fehlgeschlagen. Prüfe den zugewiesenen Proxy (bei neuen Konten den OpenAI-Standardproxy) und melde dich erneut an. Dieser Netzwerkfehler bedeutet nicht, dass das Token abgelaufen ist.",
   "codexAuth.loginFailed": "Login fehlgeschlagen",
   "codexAuth.needsReauth": "Erneut anmelden",
   "codexAuth.reauthenticate": "Re-authenticate",

@@ -1,5 +1,5 @@
 import type { NativeResponseControl } from "./native-response-control";
-import { ACCOUNT_EGRESS_SCOPE, currentAccountEgress, accountEgressInit, hasExplicitAccountEgress, sendWithAccountEgress } from "../../lib/account-egress";
+import { ACCOUNT_EGRESS_SCOPE, currentAccountEgress, accountEgressInit, hasExplicitAccountEgress, sendWithAccountEgress, type EgressScope } from "../../lib/account-egress";
 import { isEgressTransparentExecutor } from "../../lib/provider-egress";
 import { PROVIDER_HEADER_DEADLINE as HEADER_DEADLINE, type ProviderHeaderDeadline as HeaderDeadline } from "../../lib/provider-admission-wait";
 import type { CodexWsPreOutputRefusalHold } from "./codex-ws-wire";
@@ -389,6 +389,9 @@ export function providerFetch(
   // else keeps the provider's HTTP fetch. See ws-upstream.ts for the details.
   const unobserved = async (input: Parameters<typeof globalThis.fetch>[0], init?: RequestInit,
     reacquirePacing?: (provider: OcxProviderConfig, modelId?: string) => Promise<void>) => {
+    const nativeScope = (provider as OcxProviderConfig & Record<symbol, EgressScope>)[ACCOUNT_EGRESS_SCOPE];
+    if (nativeScope) init = { ...init, ...accountEgressInit({ ...nativeScope,
+      ...(init as Record<symbol, EgressScope> | undefined)?.[ACCOUNT_EGRESS_SCOPE] }) };
     const upstreamWebsocket = provider.upstreamWebsocket;
     if (!options.httpOnly && typeof input === "string" && init
       && shouldUseCodexWsUpstream(input, init, runtime, upstreamWebsocket)) {

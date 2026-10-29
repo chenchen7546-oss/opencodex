@@ -2089,6 +2089,7 @@ export const zhTW: Record<TKey, string> = {
   "codexAuth.oauthCodeSubmitted": "程式碼已提交——正在等待登入完成…",
   "codexAuth.oauthStatusRetrying": "檢查登入狀態時發生網路或代理錯誤——正在重試…",
   "codexAuth.oauthCancelled": "登入已取消。",
+  "codexAuth.warmupNetworkFailed": "帳號網路驗證失敗。請檢查綁定代理（新帳號使用 OpenAI 提供商預設代理），恢復連線後重試登入。此次網路失敗不代表權杖已過期。",
   "codexAuth.loginFailed": "登入失敗",
   "codexAuth.needsReauth": "重新登入",
   "codexAuth.reauthenticate": "重新認證",

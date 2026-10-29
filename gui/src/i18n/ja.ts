@@ -2699,6 +2699,7 @@ export const ja: Record<TKey, string> = {
   "codexAuth.oauthCodeSubmitted": "コードを送信しました — ログイン完了を待っています…",
   "codexAuth.oauthStatusRetrying": "ログイン状態の確認中にネットワークまたはプロキシ エラーが発生しました — 再試行中…",
   "codexAuth.oauthCancelled": "ログインはキャンセルされました。",
+  "codexAuth.warmupNetworkFailed": "アカウントのネットワーク検証に失敗しました。割り当てたプロキシ（新規アカウントでは OpenAI の既定プロキシ）を確認し、接続回復後にログインを再試行してください。この通信エラーはトークンの期限切れを意味しません。",
   "codexAuth.loginFailed": "ログインに失敗しました",
   "codexAuth.needsReauth": "再ログイン",
   "codexAuth.reauthenticate": "再認証",

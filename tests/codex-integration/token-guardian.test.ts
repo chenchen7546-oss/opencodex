@@ -14,6 +14,12 @@ import {
   resetLifecycleDrainStateForTests,
 } from "../../src/server/lifecycle";
 import { removeTreeWithRetry } from "../helpers/remove-tree";
+import { registerAccountEgress } from "../../src/lib/account-egress";
+import { ProxyStore } from "../../src/proxy-manager/store";
+import { ProxyManager } from "../../src/proxy-manager/service";
+import { upstreamAccounts } from "../../src/proxy-manager/accounts";
+import { profileInput } from "../../src/proxy-manager/validation";
+import { loadConfig } from "../../src/config";
 
 const origHome = process.env.HOME;
 const origOcxHome = process.env.OPENCODEX_HOME;
@@ -486,4 +492,42 @@ describe("token guardian", () => {
       drain?.release();
     }
   });
+});
+
+test("real OAuth and native refresh plus guardian warmup follow live account reassignment", async () => {
+  writeConfig({
+    tokenGuardian: { enabled: true, tickSeconds: 60, leadSeconds: 60, codexWarmupEnabled: true, codexWarmupMaxAgeSeconds: 60 },
+    providers: {
+      kimi: kimiProvider("proactive"),
+      openai: { adapter: "openai-responses", baseUrl: "https://chatgpt.com/backend-api/codex", authMode: "forward", codexAccountMode: "pool", refreshPolicy: "proactive" },
+    },
+    codexAccounts: [{ id: "proxy-guardian", isMain: false }],
+  });
+  const manager = new ProxyManager(new ProxyStore(":memory:"), upstreamAccounts(loadConfig));
+  const first = manager.store.save(profileInput({ name: "A", url: "http://127.0.0.1:3128" }));
+  const second = manager.store.save(profileInput({ name: "B", url: "http://127.0.0.1:3129" }));
+  registerAccountEgress({ send: (...args) => manager.send(...args), explicit: (...args) => manager.explicit(...args) });
+  try {
+    for (const swapped of [false, true]) {
+      const seen: { host: string; path: string; proxy: unknown }[] = [];
+      await saveCredential("kimi", { access: "kimi-proxy", refresh: "kimi-refresh", expires: Date.now() + 5_000 });
+      saveCodexAccountCredential("proxy-guardian", { accessToken: "codex-proxy", refreshToken: "codex-refresh", expiresAt: Date.now() + 5_000, chatgptAccountId: "proxy-tenant" });
+      markCodexAccountValidated("proxy-guardian", Date.now() - 120_000);
+      const kimiId = getAccountSet("kimi")!.activeAccountId!;
+      manager.bind([{ kind: "oauth", provider: "kimi", id: kimiId }], { mode: "proxy", proxyId: swapped ? second.id : first.id });
+      manager.bind([{ kind: "codex", provider: "openai", id: "proxy-guardian" }], { mode: "proxy", proxyId: swapped ? first.id : second.id });
+      globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = new URL(String(input));
+        seen.push({ host: url.hostname, path: url.pathname, proxy: (init as { proxy: unknown }).proxy });
+        return url.pathname.endsWith("/responses") ? new Response('data: {"type":"response.completed"}\n\n') : Response.json(OK_TOKEN);
+      }) as typeof fetch;
+      const result = await guardianSweep(Date.now());
+      expect(result.failed).toEqual([]);
+      expect(result.warmed).toContain("codex:proxy-guardian");
+      expect(seen).toHaveLength(3);
+      expect(seen.find(row => row.host === "auth.openai.com")?.proxy).toBe(swapped ? first.url : second.url);
+      expect(seen.find(row => row.path.endsWith("/responses"))?.proxy).toBe(swapped ? first.url : second.url);
+      expect(seen.find(row => row.host !== "auth.openai.com" && row.host !== "chatgpt.com")?.proxy).toBe(swapped ? second.url : first.url);
+    }
+  } finally { registerAccountEgress(undefined); manager.close(); }
 });

@@ -595,6 +595,7 @@ export async function fetchPoolAccountQuota(
         if (sourceToken && (sourceToken.generation !== generation
           || !isCodexAccountGenerationLive(accountId, generation))) return result;
         await warmCodexAccount({
+          poolAccountId: accountId,
           accessToken: sourceToken?.accessToken ?? record.credential.accessToken,
           chatgptAccountId: sourceToken?.chatgptAccountId ?? record.credential.chatgptAccountId,
         });

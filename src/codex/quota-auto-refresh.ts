@@ -224,7 +224,7 @@ async function warmAccount(config: OcxConfig, accountId: string): Promise<void |
     if (isCodexAccountPaused(config, accountId) || isAccountNeedsReauth(accountId)) return false;
     const poolWriter = capturePoolQuotaWriter(accountId, token);
     try {
-      await warmCodexAccount({ ...token, onCompleted: headers => {
+      await warmCodexAccount({ ...token, poolAccountId: accountId, onCompleted: headers => {
         if (isCodexAccountGenerationLive(accountId, token.generation)) {
           applyAccountQuotaFromUpstreamHeaders(accountId, headers, writerGeneration, undefined, { poolWriter, poolResponse: true });
         }
@@ -261,7 +261,7 @@ async function warmAccount(config: OcxConfig, accountId: string): Promise<void |
           && getMainQuotaCredentialGeneration() === credentialGeneration;
       };
       try {
-        await warmCodexAccount({ ...token, onCompleted: headers => {
+        await warmCodexAccount({ ...token, poolAccountId: accountId, onCompleted: headers => {
           if (writer && credentialStillLive()) {
             applyAccountQuotaFromUpstreamHeaders(accountId, headers, writerGeneration, writer);
           }

@@ -15,7 +15,7 @@ Keychain/environment references resolve through the existing key resolver for wi
 Precedence is account binding, managed provider default (`oauth/provider/@new`), then the existing
 provider/global route. A binding is inherit, explicit direct, or a profile ID. Direct passes Bun's
 `proxy: false`; it never clears process environment variables. Missing/disabled bound profiles fail
-closed. Deleting a profile still used by a binding or subscription is refused.
+closed. Deleting a profile still used by a binding or subscription is refused. Bindings are resolved at each physical send, including retries and reused dispatchers. A binding change during core startup is rechecked before sending; repeated churn refuses after bounded retries. Existing streams finish on their original lease. Switching between existing nodes needs no core restart; editing node definitions waits for active leases to drain.
 
 The final outgoing credential is matched against stored credentials, using only authentication
 headers, API-key query fields and small token-exchange bodies. Prompts and arbitrary body fields
@@ -25,10 +25,10 @@ credentials with managed routes are refused. Unknown forwarded credentials canno
 a stored account; provider defaults apply where a provider is known.
 
 `src/lib/account-egress-dispatch.ts` maps request-owned OAuth and API-key dispatch receipts into
-the seam. `src/server/responses/request-transport.ts` updates that scope after reselection.
+the seam. `src/codex/account-egress-context.ts` carries a nonserialized native pool identity on request-owned providers, including source-linked credentials; stripping runtime auth on reselection also strips that identity. `src/server/responses/request-transport.ts` updates that scope after reselection.
 The account manager applies the route at the physical send in
 `src/server/responses/fetch-helpers.ts`; a symbol prevents nested transport wrappers from counting
-or routing twice. Account-bound Codex WebSocket sends use HTTP/SSE, including dispatch-time fallback.
+or routing twice. Opt-in agent-task recovery also enters the account fetch seam with the OpenAI provider hint. Account-bound Codex WebSocket sends use HTTP/SSE, including dispatch-time fallback.
 `src/adapters/cursor/live-transport.ts` and `live-models.ts` select HTTP/1.1 when a managed route is
 explicit. The model stream remains streamed; no complete response is buffered for accounting.
 
@@ -38,7 +38,7 @@ restrictions, credential ownership checks and manual redirects remain in force.
 
 OAuth login/refresh scopes are created by `src/oauth/index.ts`. Native pool login in
 `src/codex/auth-api/login-flow.ts` supplies the native account/default scope rather than the temporary
-ChatGPT OAuth slot. Native main/pool refresh and quota probes supply their stable native identity.
+ChatGPT OAuth slot. All native warmup callers (login, deferred validation, quota auto-refresh and token guardian) pass the pool ID into `src/codex/warmup.ts`; model fallback retains it. Native main/pool refresh, quota, Reserve and reset-credit probes supply their stable native identity.
 `src/providers/quota.ts` and `quota-key-accounts.ts` scope each account probe independently.
 Provider-owned bare fetches import `src/lib/account-fetch.ts`, which enters the same configured
 outbound transport. Browser pages opened during OAuth are outside this server's network control.

@@ -2815,6 +2815,7 @@ export const vi: Record<TKey, string> = {
   "codexAuth.oauthCodeSubmitted": "Đã gửi mã — đang đợi đăng nhập hoàn tất…",
   "codexAuth.oauthStatusRetrying": "Lỗi mạng hoặc proxy trong khi kiểm tra trạng thái đăng nhập — đang thử lại…",
   "codexAuth.oauthCancelled": "Quá trình đăng nhập đã bị hủy.",
+  "codexAuth.warmupNetworkFailed": "Xác minh mạng của tài khoản thất bại. Kiểm tra proxy đã gán (hoặc proxy mặc định OpenAI cho tài khoản mới), rồi thử đăng nhập lại. Lỗi mạng này không có nghĩa là token đã hết hạn.",
   "codexAuth.loginFailed": "Đăng nhập thất bại",
   "codexAuth.needsReauth": "Đăng nhập lại",
   "codexAuth.reauthenticate": "Xác thực lại",

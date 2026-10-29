@@ -12,6 +12,10 @@ import type { OcxProviderConfig } from "../../src/types";
 import { providerOutboundGet } from "../../src/lib/provider-outbound";
 import { CODEX_RESPONSES_HTTP_URL } from "../../src/server/responses/codex-ws-request";
 import { shouldUseCodexWsUpstream } from "../../src/server/responses/ws-upstream";
+import { verifyCodexAccountWarmup } from "../../src/codex/auth-api/login-flow";
+import { warmCodexAccount } from "../../src/codex/warmup";
+import { fetchCodexUsage, resetQuotaQueryBackoffForTests } from "../../src/codex/quota-query-backoff";
+import { applyCodexAuthContextToProvider, stripCodexRuntimeProviderFields } from "../../src/codex/auth-context";
 
 const a: EgressAccount = { kind: "oauth", provider: "dsh-account", id: "a" };
 const b: EgressAccount = { kind: "oauth", provider: "dsh-account", id: "b" };
@@ -20,6 +24,7 @@ const originalFetch = globalThis.fetch;
 afterEach(() => {
   globalThis.fetch = originalFetch;
   registerAccountEgress(undefined);
+  resetQuotaQueryBackoffForTests();
   for (const m of managers.splice(0)) m.close();
 });
 function fixture() {
@@ -368,5 +373,190 @@ describe("account proxy routing", () => {
     expect(await (await get()).text()).toBe("direct");
     expect([proxied, pinned]).toEqual([1, 1]);
     expect(manager.traffic.rows("2000-01-01").reduce((n, r) => n + r.requests, 0)).toBe(2);
+  });
+});
+
+describe("native Codex proxy identity across account operations", () => {
+  // OAuth staging and a native pool row may carry the same credential. Native operations
+  // must retain their own route even before the new row has been persisted.
+  function nativeFixture() {
+    const store = new ProxyStore(":memory:");
+    const staged: EgressAccount = { kind: "oauth", provider: "chatgpt", id: "staged" };
+    const existing: EgressAccount = { kind: "codex", provider: "openai", id: "existing" };
+    const main: EgressAccount = { ...existing, id: "__main__" };
+    const manager = new ProxyManager(store, {
+      list: () => [staged, existing, main].map(account => ({ account, label: account.id })),
+      resolve: (_url, init, provider) => {
+        const bearer = new Headers(init?.headers).get("authorization");
+        const matches = bearer === "Bearer fresh" ? [staged]
+          : bearer === "Bearer shared" ? [staged, existing, main] : [];
+        return matches.filter(account => !provider || account.provider === provider);
+      },
+    });
+    managers.push(manager);
+    const first = store.save(profileInput({ name: "default", url: "http://127.0.0.1:3128" }));
+    const second = store.save(profileInput({ name: "account", url: "http://127.0.0.1:3129" }));
+    store.bind([{ kind: "oauth", provider: "openai", id: "@new" }], { mode: "proxy", proxyId: first.id });
+    store.bind([existing], { mode: "proxy", proxyId: second.id });
+    store.bind([main], { mode: "direct" });
+    registerAccountEgress({ send: (...args) => manager.send(...args), explicit: (...args) => manager.explicit(...args) });
+    const seen: unknown[] = [];
+    const mockSend = (reply: () => Response = () => new Response('data: {"type":"response.completed"}\n\n')) => {
+      globalThis.fetch = Object.assign(async (_input: RequestInfo | URL, init?: RequestInit) => {
+        seen.push((init as { proxy?: unknown })?.proxy);
+        return reply();
+      }, { preconnect: () => {} }) as typeof fetch;
+    };
+    mockSend();
+    return { manager, store, first, second, existing, main, seen, mockSend };
+  }
+  test("new-login warmup uses OpenAI default despite the temporary ChatGPT OAuth credential", async () => {
+    const { first, seen, manager } = nativeFixture();
+    expect((await verifyCodexAccountWarmup("new-pool-id", "fresh", "tenant-id")).ok).toBe(true);
+    expect(seen).toEqual([first.url]);
+    expect(manager.traffic.rows("2000-01-01")[0]).toMatchObject({
+      accountKey: accountKey({ kind: "codex", provider: "openai", id: "new-pool-id" }), purpose: "model", requests: 1,
+    });
+  });
+  test("native model dispatch preserves the selected account with a new source-linked bearer and drops it on reselection", async () => {
+    const { store, first, second, existing, seen } = nativeFixture();
+    const provider = applyCodexAuthContextToProvider({ adapter: "openai-responses", authMode: "forward", baseUrl: "https://chatgpt.com/backend-api/codex" }, {
+      kind: "pool", accountId: existing.id, accessToken: "fresh", chatgptAccountId: "tenant-id", writerGeneration: 1, generation: 1,
+    }, "pool");
+    const send = providerFetch(provider, "1.4.0", { providerName: "openai" });
+    const init = { method: "POST", headers: { authorization: "Bearer fresh" }, body: JSON.stringify({ stream: true }) };
+    await (await send(CODEX_RESPONSES_HTTP_URL, init)).text();
+    store.bind([existing], { mode: "proxy", proxyId: first.id });
+    await (await send(CODEX_RESPONSES_HTTP_URL, init)).text();
+    store.bind([existing], { mode: "direct" });
+    await (await send(CODEX_RESPONSES_HTTP_URL, init)).text();
+    const stripped = stripCodexRuntimeProviderFields(provider);
+    await (await providerFetch(stripped, "1.4.0", { providerName: "openai" })(CODEX_RESPONSES_HTTP_URL, init)).text();
+    expect(seen).toEqual([second.url, first.url, false, first.url]);
+    expect(JSON.stringify(provider)).not.toContain(existing.id);
+    expect(stripped).not.toHaveProperty("_codexAccountOverride");
+  });
+  test("reauth, background warmup and main direct overrides stay isolated under concurrency", async () => {
+    const { second, seen } = nativeFixture();
+    await Promise.all([
+      verifyCodexAccountWarmup("existing", "fresh", "tenant-id"),
+      warmCodexAccount({ poolAccountId: "existing", accessToken: "shared", chatgptAccountId: "tenant-id" }),
+      warmCodexAccount({ poolAccountId: "__main__", accessToken: "shared", chatgptAccountId: "tenant-id" }),
+    ]);
+    expect(seen.filter(proxy => proxy === second.url)).toHaveLength(2);
+    expect(seen.filter(proxy => proxy === false)).toHaveLength(1);
+  });
+  test("model fallback uses the same native proxy on both physical sends", async () => {
+    const { second, seen, mockSend } = nativeFixture();
+    let calls = 0;
+    mockSend(() => ++calls === 1 ? new Response("", { status: 404 })
+      : new Response('data: {"type":"response.completed"}\n\n'));
+    expect((await verifyCodexAccountWarmup("existing", "fresh", "tenant-id")).ok).toBe(true);
+    expect(seen).toEqual([second.url, second.url]);
+  });
+  test("quota queries select native bindings with shared OAuth and native bearers", async () => {
+    const { second, seen, mockSend } = nativeFixture();
+    mockSend(() => Response.json({ rate_limit: { allowed: true } }));
+    for (const poolAccountId of ["existing", "__main__"]) {
+      const result = await fetchCodexUsage(poolAccountId, { headers: { authorization: "Bearer shared" } }, undefined, { poolAccountId });
+      expect(result?.kind).toBe("owner");
+      if (result?.kind === "owner") { await result.response.json(); result.settle(true); }
+    }
+    expect(seen).toEqual([second.url, false]);
+  });
+  test("disabled account binding refuses warmup and quota without any direct send", async () => {
+    const { store, second, seen } = nativeFixture();
+    store.save({ ...second, enabled: false }, second.id);
+    const result = await verifyCodexAccountWarmup("existing", "fresh", "tenant-id");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.response.status).toBe(502);
+      expect(await result.response.json()).toMatchObject({ code: "codex_warmup_transport_failed", reason: "transport" });
+    }
+    await expect(fetchCodexUsage("disabled", { headers: { authorization: "Bearer shared" } }, undefined,
+      { poolAccountId: "existing" })).rejects.toThrow("proxy_unavailable");
+    expect(seen).toHaveLength(0);
+  });
+  test("connection failures do not imply expired credentials or expose proxy details", async () => {
+    const { mockSend, seen } = nativeFixture();
+    mockSend(() => { throw new Error("connect failed http://user:secret@127.0.0.1:3128"); });
+    const result = await verifyCodexAccountWarmup("existing", "fresh", "tenant-id");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.response.status).toBe(502);
+      const body = await result.response.json();
+      expect(body.code).toBe("codex_warmup_transport_failed");
+      expect(body.error).not.toContain("Reauthenticate");
+      expect(JSON.stringify(body)).not.toContain("secret");
+    }
+    expect(seen).toHaveLength(1);
+  });
+  test.each([401, 403, 429])("upstream %i retains its existing authentication or rate-limit classification", async status => {
+    const { mockSend } = nativeFixture();
+    mockSend(() => new Response("", { status }));
+    const result = await verifyCodexAccountWarmup("existing", "fresh", "tenant-id");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.response.status).toBe(status === 429 ? 429 : 401);
+      expect((await result.response.json()).code).toBe(status === 429 ? "codex_warmup_rate_limited" : "codex_warmup_failed");
+    }
+  });
+});
+
+describe("live proxy reassignment", () => {
+  test("a reused model dispatcher switches new sends while an existing stream finishes on its original exit", async () => {
+    const { manager, store, first, second } = fixture();
+    registerAccountEgress({ send: (...args) => manager.send(...args), explicit: (...args) => manager.explicit(...args) });
+    const seen: unknown[] = [];
+    let finish!: () => void;
+    globalThis.fetch = Object.assign(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      seen.push((init as { proxy: unknown }).proxy);
+      if (seen.length > 1) return new Response("new-route");
+      return new Response(new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode("first-"));
+          finish = () => { controller.enqueue(new TextEncoder().encode("finished")); controller.close(); };
+        },
+      }));
+    }, { preconnect: () => {} }) as typeof fetch;
+    const send = providerFetch({ adapter: "anthropic", baseUrl: "https://api.deepseek.com/anthropic" } as OcxProviderConfig,
+      undefined, { providerName: "dsh-account" });
+    const request = () => send("https://api.deepseek.com/anthropic/v1/messages", {
+      method: "POST", headers: { "x-dsh-auth-token": "token-a" }, body: "{}",
+    });
+    const old = await request();
+    const reading = old.text();
+    manager.bind([a], { mode: "proxy", proxyId: second.id });
+    expect(await (await request()).text()).toBe("new-route");
+    manager.bind([a], { mode: "direct" });
+    expect(await (await request()).text()).toBe("new-route");
+    finish();
+    expect(await reading).toBe("first-finished");
+    expect(seen).toEqual([first.url, second.url, false]);
+    expect(manager.traffic.rows("2000-01-01").map(row => row.proxyId).sort()).toEqual([first.id, second.id, "direct"].sort());
+    store.bind([a], { mode: "proxy", proxyId: second.id });
+    store.save({ ...second, enabled: false }, second.id);
+    await expect(request()).rejects.toThrow("proxy_unavailable");
+    expect(seen).toHaveLength(3);
+  });
+  test("a binding changed during core startup is rechecked before credentials are sent", async () => {
+    const { store, first, second } = fixture();
+    store.save({ ...first, node: { name: "fixture", type: "hysteria2", server: "proxy.invalid", port: 443, password: "fixture" } }, first.id);
+    let unblock!: () => void;
+    const waiting = new Promise<void>(resolve => { unblock = resolve; });
+    let released = 0;
+    const core = { acquire: async () => { await waiting; return { url: "http://127.0.0.1:40000", release: () => { released++; } }; }, close() {} };
+    const manager = new ProxyManager(store, { list: () => [{ account: a, label: a.id }], resolve: () => [a] }, core as never);
+    // The fixture manager owns the shared store; only flush the extra ledger at the end.
+    const seen: unknown[] = [];
+    const pending = manager.send("https://provider.invalid", {}, async (_url, init) => {
+      seen.push((init as { proxy: unknown }).proxy); return new Response("ok");
+    });
+    manager.bind([a], { mode: "proxy", proxyId: second.id });
+    unblock();
+    expect(await (await pending).text()).toBe("ok");
+    expect(seen).toEqual([second.url]);
+    expect(released).toBe(1);
+    manager.traffic.close();
   });
 });

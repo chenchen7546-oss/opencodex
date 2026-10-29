@@ -2883,6 +2883,7 @@ export const en = {
   "codexAuth.oauthCodeSubmitted": "Code submitted — waiting for login to finish…",
   "codexAuth.oauthStatusRetrying": "Network or proxy error while checking login status — retrying…",
   "codexAuth.oauthCancelled": "Login was cancelled.",
+  "codexAuth.warmupNetworkFailed": "Account network verification failed. Check the bound proxy (or the OpenAI provider default for a new account), then retry login. This network failure does not mean the token expired.",
   "codexAuth.loginFailed": "Login failed",
   "codexAuth.needsReauth": "Re-login",
   "codexAuth.reauthenticate": "Re-authenticate",

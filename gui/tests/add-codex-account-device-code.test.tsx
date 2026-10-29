@@ -189,3 +189,18 @@ test("reauth can switch to the device flow from the waiting step", async () => {
   expect(loginBodies[1]).toMatchObject({ device: true, reauth: true, id: "acct-1" });
   expect(host.querySelector(".login-hint-device-code")?.textContent).toBe(DEVICE_CODE);
 });
+
+test("account network verification errors show proxy guidance instead of an expired-token message", async () => {
+  await mountAndChooseDeviceLogin(true);
+  await act(async () => {
+    while (!statusHolders.length) await new Promise(resolve => setTimeout(resolve, 10));
+    for (const holder of statusHolders.splice(0)) holder.resolve(Response.json({
+      status: "error", code: "codex_warmup_transport_failed", error: "server fallback text",
+    }));
+    await new Promise(resolve => setTimeout(resolve, 0));
+  });
+  expect(host.textContent).toContain("Check the bound proxy");
+  expect(host.textContent).toContain("does not mean the token expired");
+  expect(host.textContent).not.toContain("server fallback text");
+  expect(host.textContent).toContain("Device code login");
+});
