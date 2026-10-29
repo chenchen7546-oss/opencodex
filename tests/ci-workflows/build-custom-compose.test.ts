@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { ensureDefaultCodexConfig } from "../../docker/custom/codex-config";
 import {
   releaseAsset,
   verifiedBinary,
@@ -9,6 +13,19 @@ import {
 const digest = (value: Uint8Array) =>
   createHash("sha256").update(value).digest("hex");
 describe("custom image core verification", () => {
+  test("creates a parseable default and preserves operator configuration on reinitialization", () => {
+    const home = mkdtempSync(join(tmpdir(), "ocx-custom-config-"));
+    try {
+      const path = join(home, "config.toml");
+      expect(ensureDefaultCodexConfig(home)).toBe(true);
+      const defaults = Bun.TOML.parse(readFileSync(path, "utf8")) as { features: { multi_agent_v2: boolean } };
+      expect(defaults.features.multi_agent_v2).toBe(false);
+      const owned = '# Operator settings\nmodel = "fixture-model"\n[features]\nmulti_agent_v2 = false\n';
+      writeFileSync(path, owned);
+      expect(ensureDefaultCodexConfig(home)).toBe(false);
+      expect(readFileSync(path, "utf8")).toBe(owned);
+    } finally { rmSync(home, { recursive: true, force: true }); }
+  });
   test("selects pinned official assets and rejects unsupported architectures", () => {
     for (const arch of ["amd64", "arm64"]) {
       const asset = releaseAsset(arch);

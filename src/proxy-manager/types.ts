@@ -46,6 +46,8 @@ export interface AccountBinding {
 export interface ManagedAccount {
   account: EgressAccount;
   label: string;
+  alias?: string;
+  email?: string;
   choice: ProxyChoice;
   orphaned?: boolean;
 }

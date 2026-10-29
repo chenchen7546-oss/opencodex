@@ -1,0 +1,6 @@
+# Minimal defaults for a fresh OpenCodex custom container.
+# Credentials and provider routing are configured separately in OpenCodex.
+# Existing config.toml files are retained by the initializer.
+
+[features]
+multi_agent_v2 = false

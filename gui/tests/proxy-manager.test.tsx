@@ -11,6 +11,7 @@ let testWindow: Window, root: Root | undefined;
 const names = ["window", "document", "navigator", "localStorage", "IS_REACT_ACT_ENVIRONMENT", "fetch"] as const;
 let saved: Record<string, unknown>;
 let calls: Array<{ path: string; method: string; body: unknown }>;
+let responseSnapshot: Snapshot;
 const snapshot: Snapshot = {
   profiles: [
     {
@@ -57,6 +58,7 @@ beforeEach(() => {
   saved = Object.fromEntries(names.map((name) => [name, Reflect.get(globalThis, name)]));
   testWindow = new Window({ url: "http://localhost/" });
   calls = [];
+  responseSnapshot = structuredClone(snapshot);
   for (const name of ["window", "document", "navigator", "localStorage"] as const)
     Object.defineProperty(globalThis, name, {
       configurable: true,
@@ -69,7 +71,7 @@ beforeEach(() => {
       const path = String(input);
       calls.push({ path, method: init?.method ?? "GET", body: init?.body ? JSON.parse(String(init.body)) : undefined });
       return Response.json(
-        init?.method && init.method !== "GET" ? { ok: true } : path.includes("/traffic") ? traffic : snapshot,
+        init?.method && init.method !== "GET" ? { ok: true } : path.includes("/traffic") ? traffic : responseSnapshot,
       );
     },
     { preconnect: () => {} },
@@ -137,4 +139,46 @@ test("metadata editing preserves the saved secret unless a replacement is entere
   const sent = calls.find((c) => c.method === "PATCH");
   expect(sent?.path).toEndWith("/profiles/cn");
   expect(sent?.body).not.toHaveProperty("password");
+});
+
+test("empty proxies have an add entry point without an empty table, and switching add/import shows only one editor", async () => {
+  responseSnapshot.profiles = [];
+  await mount();
+  expect(document.body.textContent).toContain("Add your first proxy");
+  expect(document.querySelector('section[aria-label="Proxy list"] table')).toBeNull();
+  await click("Add proxy");
+  expect(document.querySelectorAll("form")).toHaveLength(1);
+  expect(document.querySelectorAll("fieldset")).toHaveLength(2);
+  await click("Bulk import");
+  expect(document.querySelectorAll("form")).toHaveLength(1);
+  expect(document.querySelectorAll("fieldset")).toHaveLength(0);
+});
+
+test("account identities show alias and email, with an honest fallback instead of a raw hash", async () => {
+  responseSnapshot.accounts = [
+    { account: { kind: "oauth", provider: "kimi", id: "abcdef0123456789abcdef0123456789" }, label: "abcdef0123456789abcdef0123456789", choice: { mode: "inherit" } },
+    { account: { kind: "oauth", provider: "openai", id: "second" }, label: "Work account", alias: "Work account", email: "person@example.test", choice: { mode: "inherit" } },
+    { account: { kind: "oauth", provider: "kimi", id: "@new" }, label: "@new", choice: { mode: "inherit" } },
+  ];
+  await mount(); await click("Account bindings");
+  expect(document.body.textContent).toContain("kimi account (unnamed)");
+  expect(document.body.textContent).toContain("No email or name was returned");
+  expect(document.body.textContent).toContain("abcdef…456789");
+  expect(document.body.textContent).not.toContain("abcdef0123456789abcdef0123456789");
+  expect(document.body.textContent).toContain("Work account");
+  expect(document.body.textContent).toContain("person@example.test");
+  expect(document.body.textContent).toContain("Use system network settings");
+  expect(document.querySelectorAll('button[aria-label^="Edit alias for"]')).toHaveLength(2);
+});
+
+test("editing an alias uses the existing account endpoint and keeps proxy bindings untouched", async () => {
+  await mount(); await click("Account bindings");
+  await click("Edit alias");
+  const form = document.querySelector("dialog form")!;
+  const input = form.querySelector("input")!;
+  input.value = "My work account";
+  await act(async () => { form.dispatchEvent(new testWindow.Event("submit", { bubbles: true, cancelable: true }) as unknown as Event); });
+  const edit = calls.find(row => row.path.endsWith("/api/oauth/accounts/alias"));
+  expect(edit?.body).toEqual({ provider: "dsh-account", accountId: "one", alias: "My work account" });
+  expect(calls.some(row => row.path.endsWith("/bindings") && row.method === "PUT")).toBe(false);
 });

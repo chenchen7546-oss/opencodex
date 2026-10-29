@@ -1,4 +1,5 @@
 import { proxyManagerCopy } from "./proxy-manager-copy";
+import { notificationCopy } from "./notification-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 import type { TKey } from "./en";
 
@@ -7,6 +8,7 @@ import type { TKey } from "./en";
  */
 export const ko: Record<TKey, string> = {
   ...proxyManagerCopy.en,
+  ...notificationCopy.en,
   "pws.completion.title": "모델 응답 테스트",
   "pws.completion.model": "테스트할 모델",
   "pws.completion.choose": "모델 선택",
@@ -328,7 +330,7 @@ export const ko: Record<TKey, string> = {
   "auth.adminTokenUnavailable": "관리자 토큰을 확인할 수 없습니다. 다시 시도하세요.",
   "auth.adminTokenHelp": "이 값은 OpenCodex 관리 API의 관리자 토큰이며 공급자 API 키가 아닙니다. 프록시가 처음 실행될 때 ~/.opencodex/admin-api-token(또는 $OPENCODEX_HOME/admin-api-token)에 기록하고, OPENCODEX_ADMIN_AUTH_TOKEN을 설정하면 그 값이 우선합니다.",
   "auth.rememberDevice": "이 기기 기억하기",
-  "auth.rememberDeviceHint": "관리자 토큰이 아닌 취소 가능한 HttpOnly 세션을 30일 동안 유지합니다. API와 동일한 오리진의 HTTPS 대시보드에 직접 연결(또는 로컬 루프백)이 필요합니다.",
+  "auth.rememberDeviceHint": "관리자 토큰을 저장하지 않고 취소 가능한 HttpOnly 세션을 30일 동안 유지합니다. 동일 출처 HTTPS, 루프백 또는 서버가 명시적으로 허용한 사설 HTTP 주소를 지원합니다. HTTP 세션은 암호화되지 않은 상태로 전송됩니다.",
   "connection.forgetDevice": "이 기기 잊기",
   "connection.forgetDeviceFailed": "이 기기를 해제하지 못했습니다. 세션은 유지됩니다.",
   "auth.adminTokenDocsLink": "찾는 방법",

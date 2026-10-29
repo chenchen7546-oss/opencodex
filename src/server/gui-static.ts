@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { basename, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { browserSecurityHeaders } from "./auth-cors";
+import { configuredHttpRememberOrigin } from "./lan-dashboard-policy";
 import type { GuiSessionBootstrap } from "./gui-session";
 import { packageVersion } from "../lib/package-version";
 import { isStandaloneBinary, standaloneRoot } from "../lib/standalone";
@@ -144,6 +145,10 @@ function runtimeRoleMeta(runtimeRole: string): string {
 function managementAuthRequiredMeta(required: boolean): string {
   return `<meta name="opencodex-management-auth-required" content="${required ? "1" : "0"}">`;
 }
+function httpRememberOriginMeta(): string {
+  const origin = configuredHttpRememberOrigin();
+  return origin ? `<meta name="opencodex-http-remember-origin" content="${escapeHtmlAttribute(origin)}">` : "";
+}
 function htmlDocumentResponse(html: string): Response {
   return new Response(html, {
     headers: {
@@ -163,6 +168,7 @@ function htmlResponse(
 ): Response {
   let html = readFileSync(path, "utf8");
   const bootstrap = [
+    httpRememberOriginMeta(),
     runtimeRole ? runtimeRoleMeta(runtimeRole) : "",
     managementAuthRequired === undefined ? "" : managementAuthRequiredMeta(managementAuthRequired),
     session ? sessionBootstrapMeta(session) : "",

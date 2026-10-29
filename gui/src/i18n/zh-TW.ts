@@ -1,10 +1,12 @@
 import { proxyManagerCopy } from "./proxy-manager-copy";
+import { notificationCopy } from "./notification-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 import type { TKey } from "./en";
 
 /** Traditional Chinese (Taiwan) UI strings — keys must match `en.ts` 1:1. */
 export const zhTW: Record<TKey, string> = {
   ...proxyManagerCopy.zh,
+  ...notificationCopy.zh,
   "pws.completion.title": "模型回應測試",
   "pws.completion.model": "要測試的模型",
   "pws.completion.choose": "選擇模型",
@@ -2926,7 +2928,7 @@ export const zhTW: Record<TKey, string> = {
   "auth.adminTokenUnavailable": "無法驗證管理員金鑰。請再試一次。",
   "auth.adminTokenHelp": "這是 OpenCodex 管理 API 的管理員金鑰，不是服務商 API 金鑰。代理首次啟動時會寫入 ~/.opencodex/admin-api-token（或 $OPENCODEX_HOME/admin-api-token），設定 OPENCODEX_ADMIN_AUTH_TOKEN 可覆寫該值。",
   "auth.rememberDevice": "記住此裝置",
-  "auth.rememberDeviceHint": "保留可撤銷的 HttpOnly 工作階段30天，不儲存管理員權杖。需要直接存取與 API 同源的 HTTPS 儀表板（或本機回環）。",
+  "auth.rememberDeviceHint": "保留可撤銷的 HttpOnly 工作階段30天，不儲存管理員權杖。支援同源 HTTPS、本機回環或伺服器明確允許的內網 HTTP；HTTP 工作階段傳輸未加密。",
   "connection.forgetDevice": "忘記此裝置",
   "connection.forgetDeviceFailed": "無法忘記此裝置。工作階段已保留。",
   "auth.adminTokenDocsLink": "如何尋找",

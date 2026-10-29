@@ -1,4 +1,5 @@
 import { proxyManagerCopy } from "./proxy-manager-copy";
+import { notificationCopy } from "./notification-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 // Brazilian Portuguese — generated from en.ts. Must match TKey set (compile-checked).
 import type { TKey } from "./en";
@@ -9,6 +10,7 @@ import type { TKey } from "./en";
  */
 export const pt: Record<TKey, string> = {
   ...proxyManagerCopy.en,
+  ...notificationCopy.en,
   "pws.completion.title": "Teste de resposta do modelo",
   "pws.completion.model": "Modelo a testar",
   "pws.completion.choose": "Escolha um modelo",
@@ -285,7 +287,7 @@ export const pt: Record<TKey, string> = {
   "auth.adminTokenUnavailable": "Não foi possível verificar o token de administrador. Tente novamente.",
   "auth.adminTokenHelp": "Este é o token de administrador de gerenciamento do OpenCodex, não uma chave de API de provedor. O proxy o grava em ~/.opencodex/admin-api-token (ou $OPENCODEX_HOME/admin-api-token) na primeira inicialização, e OPENCODEX_ADMIN_AUTH_TOKEN o substitui.",
   "auth.rememberDevice": "Lembrar este dispositivo",
-  "auth.rememberDeviceHint": "Mantém uma sessão HttpOnly revogável por 30 dias, não o token de administrador. Requer um painel HTTPS direto de mesma origem que a API (ou loopback local).",
+  "auth.rememberDeviceHint": "Mantém uma sessão HttpOnly revogável por 30 dias sem salvar o token de administrador. Aceita HTTPS de mesma origem, loopback ou HTTP privado explicitamente permitido pelo servidor. Sessões HTTP trafegam sem criptografia.",
   "connection.forgetDevice": "Esquecer este dispositivo",
   "connection.forgetDeviceFailed": "Não foi possível esquecer este dispositivo. A sessão foi mantida.",
   "auth.adminTokenDocsLink": "Como encontrá-lo",

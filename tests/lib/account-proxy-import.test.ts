@@ -81,6 +81,21 @@ describe("proxy imports and protocol transport", () => {
     });
     expect(config.rules).toEqual(["MATCH,REJECT"]);
   });
+  test("accepts subscription transport options without allowing executable plugins or file options", () => {
+    const base = { name: "fixture", server: "proxy.test", port: 443, password: "fixture-password" };
+    const ss = importProxy({ ...base, type: "ss", cipher: "aes-128-gcm", plugin: "shadow-tls",
+      "plugin-opts": { host: "tls.test", password: "fixture-plugin-password", version: 3 },
+      smux: { enabled: false, "max-connections": "4", "min-streams": "4" },
+      "brutal-opts": { enabled: false, up: "50", down: "100" } });
+    expect(ss.node?.["plugin-opts"]).toMatchObject({ version: 3 });
+    expect(ss.node?.smux).toMatchObject({ "brutal-opts": { enabled: false, up: "50" } });
+    expect(ss.node).not.toHaveProperty("brutal-opts");
+    expect(importProxy({ ...base, type: "tuic", uuid: "fixture-id", "request-timeout": 8000 }).node?.["request-timeout"]).toBe(8000);
+    expect(importProxy({ ...base, type: "anytls", "idle-session-check-interval": 30, "idle-session-timeout": 30 }).node?.["idle-session-timeout"]).toBe(30);
+    expect(importProxy({ ...base, type: "vless", uuid: "fixture-id", flow: null }).node).not.toHaveProperty("flow");
+    expect(() => importProxy({ ...base, type: "ss", cipher: "aes-128-gcm", plugin: "/bin/sh" })).toThrow("unsupported_proxy_node_field");
+    expect(() => importProxy({ ...base, type: "ss", cipher: "aes-128-gcm", plugin: "shadow-tls", "plugin-opts": { "private-key": "/etc/secret" } })).toThrow("unsupported_proxy_node_field");
+  });
   test("subscription refresh retains bound IDs and disables missing nodes atomically", async () => {
     let text =
       "proxies:\n  - {name: A, type: trojan, server: proxy.test, port: 443, password: one}\n  - {name: B, type: trojan, server: proxy.test, port: 443, password: two}";

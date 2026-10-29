@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useT } from "../../i18n/shared";
+import { IconLink, IconPlus } from "../../icons";
 import type { Snapshot } from "./types";
 
 export function Subscriptions({
@@ -16,14 +17,16 @@ export function Subscriptions({
   const t = useT();
   const [editing, setEditing] = useState(false);
   return (
-    <section className="pm-section">
-      <div className="pm-toolbar">
-        <h3>{t("pm.subscriptions")}</h3>
-        <button className="btn" disabled={busy} onClick={() => setEditing(!editing)}>
+    <section className="pm-section pm-subscriptions" aria-label={t("pm.subscriptions")}>
+      <div className="pm-section-head">
+        <h2>{t("pm.subscriptions")} <span className="pm-count">{data.subscriptions.length}</span></h2>
+        <button className="btn btn-ghost" disabled={busy} aria-expanded={editing} onClick={() => setEditing(!editing)}>
+          <IconPlus aria-hidden="true" />
           {t("pm.addSubscription")}
         </button>
       </div>
       <p className="muted">{t("pm.subscriptionHint")}</p>
+      {!editing && !data.subscriptions.length && <div className="pm-empty-inline"><IconLink aria-hidden="true" />{t("pm.emptySubscriptions")}</div>}
       {editing && (
         <form
           className="panel pm-editor"
@@ -63,13 +66,11 @@ export function Subscriptions({
               </select>
             </label>
           </div>
-          <div className="pm-toolbar">
-            <button className="btn btn-primary" disabled={busy}>
-              {t("pm.save")}
-            </button>
-            <button type="button" className="btn" onClick={() => setEditing(false)}>
+          <div className="pm-form-footer">
+            <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => setEditing(false)}>
               {t("pm.cancel")}
             </button>
+            <button className="btn btn-primary" disabled={busy}>{t("pm.save")}</button>
           </div>
         </form>
       )}

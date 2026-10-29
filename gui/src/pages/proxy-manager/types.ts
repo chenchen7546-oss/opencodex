@@ -1,3 +1,4 @@
+import type { TFn } from "../../i18n/shared";
 export interface Account {
   kind: "oauth" | "codex" | "key";
   provider: string;
@@ -24,6 +25,8 @@ export interface Profile {
 export interface AccountRow {
   account: Account;
   label: string;
+  alias?: string;
+  email?: string;
   choice: Choice;
   orphaned?: boolean;
 }
@@ -60,6 +63,13 @@ export interface Traffic {
   persistenceFailed: boolean;
 }
 export const keyOf = (account: Account) => JSON.stringify([account.kind, account.provider, account.id]);
+export function accountDisplayName(row: AccountRow, t: TFn): string {
+  if (row.account.id === "@new") return t("pm.newAccount");
+  if (row.alias || row.email) return row.alias || row.email!;
+  if (row.label && row.label !== row.account.id) return row.label;
+  if (row.account.id === "__main__") return t("codexAuth.mainAccount");
+  return t(row.account.kind === "key" ? "pm.keyIdentity" : "pm.unknownIdentity", { provider: row.account.provider });
+}
 export function bytes(n: number): string {
   const units = ["B", "KiB", "MiB", "GiB", "TiB"];
   let i = 0;

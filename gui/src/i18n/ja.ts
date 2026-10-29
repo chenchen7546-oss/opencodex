@@ -1,4 +1,5 @@
 import { proxyManagerCopy } from "./proxy-manager-copy";
+import { notificationCopy } from "./notification-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 import type { TKey } from "./en";
 
@@ -7,6 +8,7 @@ import type { TKey } from "./en";
  */
 export const ja: Record<TKey, string> = {
   ...proxyManagerCopy.en,
+  ...notificationCopy.en,
   "pws.completion.title": "モデル応答テスト",
   "pws.completion.model": "テストするモデル",
   "pws.completion.choose": "モデルを選択",
@@ -330,7 +332,7 @@ export const ja: Record<TKey, string> = {
   "auth.adminTokenUnavailable": "管理者トークンを確認できませんでした。もう一度お試しください。",
   "auth.adminTokenHelp": "これは OpenCodex 管理 API の管理者トークンで、プロバイダーの API キーではありません。プロキシは初回起動時に ~/.opencodex/admin-api-token（または $OPENCODEX_HOME/admin-api-token）へ書き込み、OPENCODEX_ADMIN_AUTH_TOKEN を設定するとそちらが優先されます。",
   "auth.rememberDevice": "このデバイスを記憶する",
-  "auth.rememberDeviceHint": "管理者トークンではなく、取り消し可能な HttpOnly セッションを30日間保持します。API と同一オリジンの HTTPS ダッシュボードへの直接アクセス（またはローカルループバック）が必要です。",
+  "auth.rememberDeviceHint": "管理者トークンを保存せず、取り消し可能な HttpOnly セッションを30日間保持します。同一オリジンの HTTPS、ループバック、またはサーバーが明示的に許可したプライベート HTTP に対応します。HTTP の通信は暗号化されません。",
   "connection.forgetDevice": "このデバイスを解除",
   "connection.forgetDeviceFailed": "デバイスを解除できませんでした。セッションは保持されています。",
   "auth.adminTokenDocsLink": "確認方法",

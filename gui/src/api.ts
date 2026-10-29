@@ -311,7 +311,8 @@ function clearLegacySessionToken(): void {
 export function canRememberDashboardDevice(plane: ApiPlane): boolean {
   const target = runtime(plane).target;
   return target.transport !== "relay" && target.serverOrigin === window.location.origin
-    && (window.location.protocol === "https:" || ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname));
+    && (window.location.protocol === "https:" || ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname)
+      || (window.location.protocol === "http:" && document.querySelector<HTMLMetaElement>('meta[name="opencodex-http-remember-origin"]')?.content === window.location.origin));
 }
 
 /** Enrollment, not capability: the Forget control exists only once a proof is stored. */

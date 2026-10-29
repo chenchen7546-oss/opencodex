@@ -2,7 +2,7 @@ name: opencodex-custom
 
 services:
   hub:
-    image: ${OPENCODEX_IMAGE:-opencodex-custom:20261029-1}
+    image: ${OPENCODEX_IMAGE:-opencodex-custom:20261029-4}
     platform: ${OPENCODEX_PLATFORM:-linux/amd64}
     pull_policy: never
     init: true
@@ -11,6 +11,7 @@ services:
       CODEX_HOME: /home/bun/.codex
       OCX_DISABLE_UPDATE_CHECK: "1"
       OPENCODEX_PROXY_CORE: /usr/local/bin/mihomo
+      OPENCODEX_HTTP_REMEMBER_ORIGIN: ${OPENCODEX_HTTP_REMEMBER_ORIGIN:-}
     ports:
       - "${OPENCODEX_BIND_ADDRESS:-127.0.0.1}:${OPENCODEX_PORT:-10100}:10100"
     volumes:

@@ -1262,6 +1262,13 @@
       ]
     },
     {
+      "path": "email-notifications.md",
+      "tier": 2,
+      "title": "Email Notifications",
+      "scope": "Independent SMTP alerts, per-recipient delivery state and passive Codex account health observation.",
+      "documents": ["src/notifications/"]
+    },
+    {
       "path": "account-proxy-management.md",
       "tier": 2,
       "title": "Account Proxy Management",

@@ -1,4 +1,5 @@
 import { proxyManagerCopy } from "./proxy-manager-copy";
+import { notificationCopy } from "./notification-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 import type { TKey } from "./en";
 
@@ -7,6 +8,7 @@ import type { TKey } from "./en";
  */
 export const zh: Record<TKey, string> = {
   ...proxyManagerCopy.zh,
+  ...notificationCopy.zh,
   "pws.completion.title": "模型响应测试",
   "pws.completion.model": "要测试的模型",
   "pws.completion.choose": "选择模型",
@@ -328,7 +330,7 @@ export const zh: Record<TKey, string> = {
   "auth.adminTokenUnavailable": "无法验证管理员令牌。请重试。",
   "auth.adminTokenHelp": "这是 OpenCodex 管理 API 的管理员令牌，不是服务商 API 密钥。代理首次启动时会写入 ~/.opencodex/admin-api-token（或 $OPENCODEX_HOME/admin-api-token），设置 OPENCODEX_ADMIN_AUTH_TOKEN 可覆盖该值。",
   "auth.rememberDevice": "记住此设备",
-  "auth.rememberDeviceHint": "保留可撤销的 HttpOnly 会话30天，不保存管理员令牌。需要直接访问与 API 同源的 HTTPS 仪表板（或本地回环）。",
+  "auth.rememberDeviceHint": "保留可撤销的 HttpOnly 会话30天，不保存管理员令牌。支持同源 HTTPS、本地回环或服务器明确允许的内网 HTTP；HTTP 会话在网络中不加密。",
   "connection.forgetDevice": "忘记此设备",
   "connection.forgetDeviceFailed": "无法忘记此设备。会话已保留。",
   "auth.adminTokenDocsLink": "如何查找",

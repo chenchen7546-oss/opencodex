@@ -6,9 +6,13 @@ import { handleSessionRoutes } from "../../src/server/management/session-routes"
 import type { ManagementContext } from "../../src/server/management/context";
 import { remoteConfig } from "../helpers/management-auth-fixture";
 import { createTempHome, type TempHome } from "../helpers/temp-home";
+import { configuredHttpRememberOrigin } from "../../src/server/lan-dashboard-policy";
 
 let home: TempHome;
 let previousToken: string | undefined;
+let previousHttpOrigin: string | undefined;
+beforeEach(() => { previousHttpOrigin = process.env.OPENCODEX_HTTP_REMEMBER_ORIGIN; delete process.env.OPENCODEX_HTTP_REMEMBER_ORIGIN; });
+afterEach(() => { if (previousHttpOrigin === undefined) delete process.env.OPENCODEX_HTTP_REMEMBER_ORIGIN; else process.env.OPENCODEX_HTTP_REMEMBER_ORIGIN = previousHttpOrigin; });
 const config = remoteConfig();
 const origin = "https://dashboard.example.test";
 function request(path = "/api/session/remember", cookie?: string, overrides: HeadersInit = {}, method = "POST") {
@@ -129,4 +133,52 @@ test("an unreadable or malformed device store fails closed without issuing a coo
   const { response } = login(); expect(response?.status).toBe(503);
   expect(response!.headers.get("set-cookie")).toBeNull();
   expect(readFileSync(join(home.root, "dashboard-sessions.json"), "utf8")).toBe("not-json");
+});
+
+test("private HTTP remember requires an exact opt-in and retains resume, CSRF and revocation checks", async () => {
+  const lan = "http://192.168.10.20:10100";
+  const state = initializeManagementAuthState(config);
+  const control = createManagementSessionControl(state);
+  const req = (path: string, method = "POST", headers: Record<string, string> = {}) => new Request(lan + path, {
+    method, headers: { Host: "192.168.10.20:10100", Origin: lan, "User-Agent": "LAN-test", ...headers },
+  });
+  const remember = (r = req("/api/session/remember")) => handleSessionRoutes({ req: r, url: new URL(r.url), config, principal: "admin-token", sessionControl: control } as ManagementContext);
+  expect(remember()?.status).toBe(403);
+  process.env.OPENCODEX_HTTP_REMEMBER_ORIGIN = lan;
+  expect(remember(req("/api/session/remember", "POST", { Origin: lan + "1" }))?.status).toBe(403);
+  expect(remember(req("/api/session/remember", "POST", { "Sec-Fetch-Site": "cross-site" }))?.status).toBe(403);
+  process.env.OPENCODEX_HTTP_REMEMBER_ORIGIN = lan + "1";
+  expect(remember()?.status).toBe(403);
+  process.env.OPENCODEX_HTTP_REMEMBER_ORIGIN = lan;
+  const response = remember()!;
+  expect(response.status).toBe(200);
+  const header = response.headers.get("set-cookie")!;
+  expect(header).toContain("HttpOnly"); expect(header).toContain("SameSite=Strict");
+  expect(header).not.toContain("Secure"); expect(header).not.toContain("ocx_admin_fixture");
+  const cookie = header.split(";")[0]!;
+  const body = await response.json();
+  const bootstrap = req("/opencodex-session", "GET", { Cookie: cookie, "X-OpenCodex-Device-Proof": body.device.proof });
+  const resumed = issueGuiSession(bootstrap, config, initializeManagementAuthState(config));
+  expect(resumed?.issuance).toBe("remembered-admin");
+  const auth = { Cookie: cookie, "X-OpenCodex-API-Key": body.session.token, "X-OpenCodex-GUI-Origin": lan };
+  expect(requireManagementAuth(req("/api/config", "GET", auth), state, config)).toBeNull();
+  expect(requireManagementAuth(req("/api/config", "POST", auth), state, config)?.status).toBe(401);
+  delete process.env.OPENCODEX_HTTP_REMEMBER_ORIGIN;
+  expect(issueGuiSession(bootstrap, config, state)).toBeNull();
+  expect(requireManagementAuth(req("/api/config", "GET", auth), state, config)?.status).toBe(401);
+  process.env.OPENCODEX_HTTP_REMEMBER_ORIGIN = lan;
+  const logout = req("/api/session/logout", "POST", { ...auth, "X-OpenCodex-CSRF-Token": body.session.csrfToken });
+  expect(handleSessionRoutes({ req: logout, url: new URL(logout.url), config, principal: "gui-session", sessionControl: control } as ManagementContext)?.status).toBe(200);
+  expect(issueGuiSession(bootstrap, config, initializeManagementAuthState(config))).toBeNull();
+});
+
+test("HTTP opt-in accepts only private IP origins without credentials, paths or wildcards", () => {
+  for (const value of ["https://192.168.1.1", "http://8.8.8.8", "http://172.32.0.1", "http://localhost", "http://*.example.test", "http://private.example.test", "http://u:p@10.0.0.1", "http://10.0.0.1/path", "http://10.0.0.1/?q=1", "http://10.0.0.1/#x"]) {
+    process.env.OPENCODEX_HTTP_REMEMBER_ORIGIN = value;
+    expect(configuredHttpRememberOrigin()).toBeNull();
+  }
+  for (const value of ["http://10.0.0.1", "http://172.16.0.1:10100", "http://172.31.255.254", "http://192.168.1.1"]) {
+    process.env.OPENCODEX_HTTP_REMEMBER_ORIGIN = value;
+    expect(configuredHttpRememberOrigin()).toBe(value);
+  }
 });

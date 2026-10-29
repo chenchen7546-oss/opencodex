@@ -85,8 +85,13 @@ write-only. Transport errors expose stable codes, not credential-bearing URLs.
 Bulk account selection spans providers; filtering, grouping labels, exit checks, monthly caps,
 secret-preserving edits and CSV export are included. Fetches are cancelled on API-target changes.
 Traffic refresh is manual; subscriptions and exit probes do not poll in the background.
+Proxy lists use a full empty state without orphan table headers and a distinct filtered-empty state.
+Add/import editors are mutually exclusive; connection and usage settings are grouped in the editor.
+The scoped responsive styles retain horizontal table scrolling and use shared light/dark tokens.
 
 ## Protocols and optional core
+
+Clash subscriptions accept the documented TUIC timeout and AnyTLS idle-session options and built-in SS obfs/v2ray/gost/ShadowTLS transports. Executable plugin names and certificate/private-key file options remain refused. Legacy top-level `brutal-opts` is normalized into `smux.brutal-opts`; conflicting definitions are refused. Regression fixtures use synthetic credentials only.
 
 HTTP, HTTPS, SOCKS5 and SOCKS5h use the existing transport, with optional username/password.
 Self-hosted and commercial services use the same protocol fields. WireGuard, SSH, SS/SSR, VMess,
@@ -154,3 +159,4 @@ the real HTTP and Mihomo routes, and writes an image-ID-bound receipt after clea
 bundle without reading runtime volumes. `tests/ci-workflows/build-custom-compose.test.ts` covers
 asset selection, checksum rejection, compressed-size limits and executable validation.
 Instructions live in [`../deploy/README.zh-CN.md`](../deploy/README.zh-CN.md).
+`gui/src/pages/proxy-manager/AccountIdentity.tsx` shows allowlisted alias/email with internal IDs as secondary text; identity-less accounts are explicitly unnamed. Editing reuses the upstream OAuth, API-key and Codex alias endpoints and never changes binding identity. Provider-default rows use system-network wording; account rows describe inheritance. Duplicate canonical subscription URLs are rejected with HTTP 409.

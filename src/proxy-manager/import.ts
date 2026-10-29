@@ -65,6 +65,17 @@ const FIELDS = new Set([
   "protocol",
   "protocol-param",
   "obfs-param",
+  "plugin",
+  "plugin-opts",
+  "brutal-opts",
+  "request-timeout",
+  "idle-session-check-interval",
+  "idle-session-timeout",
+  "min-idle-session",
+  "udp-over-tcp-version",
+  "ip-version",
+  "tfo",
+  "mptcp",
 ]);
 const NESTED = new Set([
   "public-key",
@@ -85,6 +96,17 @@ const NESTED = new Set([
   "padding",
   "statistic",
   "only-tcp",
+  "brutal-opts",
+  "up",
+  "down",
+  "password",
+  "version",
+  "tls",
+  "skip-cert-verify",
+  "fingerprint",
+  "alpn",
+  "mux",
+  "v2ray-http-upgrade",
 ]);
 function safeNode(raw: Record<string, unknown>): Record<string, unknown> {
   if (
@@ -112,9 +134,13 @@ function safeNode(raw: Record<string, unknown>): Record<string, unknown> {
   };
   for (const key of required[String(raw.type)] ?? [])
     if (typeof raw[key] !== "string" || !raw[key]) throw new ProxyManagerError("invalid_proxy_node");
+  // These names select in-process Mihomo transports, never a plugin executable.
+  if (raw.plugin !== undefined && (raw.type !== "ss" || !["obfs", "v2ray-plugin", "gost-plugin", "shadow-tls"].includes(String(raw.plugin))))
+    throw new ProxyManagerError("unsupported_proxy_node_field");
   const node: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(raw)) {
     if (key === "name") continue;
+    if (key === "flow" && value === null) continue;
     if (!FIELDS.has(key)) throw new ProxyManagerError("unsupported_proxy_node_field");
     const check = (entry: unknown, depth = 0): void => {
       if (depth > 3) throw new ProxyManagerError("invalid_proxy_node");
@@ -139,6 +165,16 @@ function safeNode(raw: Record<string, unknown>): Record<string, unknown> {
     };
     check(value);
     node[key] = value;
+  }
+  // Some subscription exporters place Brutal beside smux; Mihomo owns it inside smux.
+  if (node["brutal-opts"] !== undefined) {
+    if (!node.smux || typeof node.smux !== "object" || Array.isArray(node.smux))
+      throw new ProxyManagerError("invalid_proxy_node");
+    const smux = node.smux as Record<string, unknown>;
+    if (smux["brutal-opts"] !== undefined && JSON.stringify(smux["brutal-opts"]) !== JSON.stringify(node["brutal-opts"]))
+      throw new ProxyManagerError("invalid_proxy_node");
+    node.smux = { ...smux, "brutal-opts": node["brutal-opts"] };
+    delete node["brutal-opts"];
   }
   if (node.type === "ssh" && typeof node["private-key"] === "string" && !node["private-key"].startsWith("-----BEGIN "))
     throw new ProxyManagerError("unsupported_proxy_node_field");

@@ -7,6 +7,8 @@ export interface AccountSource {
   list(): Array<{
     account: EgressAccount;
     label: string;
+    alias?: string;
+    email?: string;
   }>;
   resolve(input: RequestInfo | URL, init?: RequestInit, provider?: string): EgressAccount[];
 }

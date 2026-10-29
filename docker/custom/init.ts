@@ -7,6 +7,7 @@ import {
   writeServiceApiTokenFile,
 } from "../../src/lib/service-secrets";
 import { withConfigMutationLockSync } from "../../src/config/mutation-lock";
+import { ensureDefaultCodexConfig } from "./codex-config";
 
 const path = process.env.OCX_API_TOKEN_FILE;
 if (!path) throw new Error("OCX_API_TOKEN_FILE is required");
@@ -23,3 +24,9 @@ withConfigMutationLockSync(() => {
     console.log("Initialized service token in private state volume.");
   }
 });
+
+const codexHome = process.env.CODEX_HOME;
+if (!codexHome) throw new Error("CODEX_HOME is required");
+console.log(ensureDefaultCodexConfig(codexHome)
+  ? "Initialized default config.toml in private Codex volume."
+  : "Existing config.toml retained; no Codex settings changed.");

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { Window } from "happy-dom";
 import { promptForAdminToken } from "../src/admin-token-dialog";
+import { canRememberDashboardDevice } from "../src/api";
 import { bootstrapApiSession, configureApiTargets, DEVICE_PROOF_CHANGED_EVENT, hasApiSession, hasRememberedDashboardDevice, installApiAuthFetch, installApiSessionFromHtml, logoutApiSession, resetApiAuthFetchForTests, setRebootstrapTimeoutForTests } from "../src/api";
 
 const PROOF_KEY = "opencodex.dashboard-device-proof";
@@ -28,6 +29,17 @@ test("remember is opt-in and submits the device choice without storing the admin
   form.dispatchEvent(new browser.Event("submit", { cancelable: true }));
   expect(await pending).toBe("ocx_admin_fixture"); expect(requested).toBe(true);
   expect(localStorage.length).toBe(0); expect(sessionStorage.length).toBe(0); expect(document.cookie).toBe("");
+});
+
+test("private HTTP remember needs server opt-in for this exact dashboard origin", () => {
+  browser.happyDOM.setURL("http://192.168.10.20:10100/");
+  resetApiAuthFetchForTests();
+  expect(canRememberDashboardDevice("shared")).toBe(false);
+  const meta = document.createElement("meta"); meta.name = "opencodex-http-remember-origin";
+  meta.content = window.location.origin; document.head.append(meta);
+  expect(canRememberDashboardDevice("shared")).toBe(true);
+  meta.content = "http://192.168.10.20:10101";
+  expect(canRememberDashboardDevice("shared")).toBe(false);
 });
 
 test("remember response stores proof and reload sends it only on session bootstrap", async () => {

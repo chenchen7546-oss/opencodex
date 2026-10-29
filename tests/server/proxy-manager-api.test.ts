@@ -22,7 +22,8 @@ function setup() {
   roots.push(home);
   process.env.OPENCODEX_HOME = home;
   const config = {
-    providers: { sample: { adapter: "openai-chat", baseUrl: "https://example.invalid", apiKey: "fake-test-key" } },
+    providers: { sample: { adapter: "openai-chat", baseUrl: "https://example.invalid", apiKey: "fake-test-key",
+      apiKeyPool: [{ id: "test-key", key: "fake-test-key", label: "Test owner" }] } },
   } as unknown as OcxConfig;
   const request = async (
     path = "",
@@ -65,7 +66,22 @@ test("management credentials are required; API responses never return proxy or s
   expect(serialized).not.toContain("proxy-secret");
   expect(serialized).not.toContain("subscription-secret");
   expect(body.profiles[0].hasPassword).toBe(true);
+  expect(body.accounts.find((row: { account: { kind: string } }) => row.account.kind === "key")).toMatchObject({ label: "Test owner", alias: "Test owner" });
+  expect(serialized).not.toContain("fake-test-key");
 });
+test("duplicate subscription URLs are refused without exposing or replacing the existing source", async () => {
+  const { request } = setup();
+  const url = "https://subscription.invalid/?token=fixture";
+  const first = await request("/subscriptions", "POST", { name: "original", url });
+  const second = await request("/subscriptions", "POST", { name: "another", url });
+  expect(first.response.status).toBe(201);
+  expect(second.response.status).toBe(409);
+  expect(second.body).toMatchObject({ error: "duplicate_subscription" });
+  expect(JSON.stringify(second.body)).not.toContain(url);
+  const rows = (await request()).body.subscriptions;
+  expect(rows).toHaveLength(1); expect(rows[0]).toMatchObject({ id: first.body.id, name: "original" });
+});
+
 test("binding mutation is atomic; disabling a bound proxy refuses sends; credentials survive metadata edits", async () => {
   const { request, config } = setup();
   const created = await request("/profiles", "POST", { name: "proxy", url: "http://alice:retained@127.0.0.1:8888" });

@@ -38,6 +38,7 @@ Persisted config, the Codex home it writes into, and the model catalog it publis
 | [`advisor.md`](advisor.md) | The optional expert consultation sidecar: manual/preflight/adaptive policies, evidence, durable task allowance, metadata activity, and loopback routing. |
 | [`config-proxy.md`](config-proxy.md) | Global proxy activation, start flags, and credential-safe CLI output. |
 | [`account-auto-pause.md`](account-auto-pause.md) | Opt-in permanent account refusal classification, credential fences, durable pause metadata, bounded recovery and resume. |
+| [`email-notifications.md`](email-notifications.md) | Independent SMTP alerts, per-recipient delivery state and passive Codex account health observation. |
 | [`account-proxy-management.md`](account-proxy-management.md) | Independent account egress, managed proxy profiles, optional core, subscriptions and bounded traffic accounting. |
 
 ### Tier 3 — Data planes and transports
@@ -317,6 +318,7 @@ A source area can be described by more than one doc, because these docs are orga
 | `src/link/` | [`remote-messaging.md`](remote-messaging.md)<br>[`remote-link.md`](remote-link.md) |
 | `src/local-credentials/` | [`remote-link.md`](remote-link.md) |
 | `src/messaging/` | [`remote-messaging.md`](remote-messaging.md)<br>[`local-messaging.md`](local-messaging.md) |
+| `src/notifications/` | [`email-notifications.md`](email-notifications.md) |
 | `src/oauth/` | [`providers/generic-account-pool.md`](providers/generic-account-pool.md)<br>[`runtime.md`](runtime.md)<br>[`transports/inventory.md`](transports/inventory.md)<br>[`providers/anthropic-account-thresholds.md`](providers/anthropic-account-thresholds.md)<br>[`providers/oauth-reconciliation.md`](providers/oauth-reconciliation.md)<br>[`providers/antigravity-account-import.md`](providers/antigravity-account-import.md)<br>[`providers-and-adapters.md`](providers-and-adapters.md)<br>[`providers/anthropic-account-pool.md`](providers/anthropic-account-pool.md)<br>[`providers/oauth-code-display-login.md`](providers/oauth-code-display-login.md)<br>[`providers/xai-grok.md`](providers/xai-grok.md) |
 | `src/oauth/account-auto-pause-policy.ts` | [`account-auto-pause.md`](account-auto-pause.md) |
 | `src/oauth/account-auto-pause.ts` | [`account-auto-pause.md`](account-auto-pause.md) |

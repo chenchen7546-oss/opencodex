@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useT } from "../../i18n/shared";
+import { Switch } from "../../ui";
 import type { Profile } from "./types";
 
 export function ProfileEditor({
@@ -53,9 +54,15 @@ export function ProfileEditor({
         });
       }}
     >
-      <h3>{t(profile ? "pm.edit" : "pm.add")}</h3>
-      <div className="pm-form-grid">
-        <label>
+      <div className="pm-section-head">
+        <h3>{t(profile ? "pm.edit" : "pm.add")}</h3>
+        <Switch on={draft.enabled} onClick={() => set("enabled", !draft.enabled)} disabled={busy} label={t("pm.enabled")} showLabel />
+      </div>
+      <div className="pm-editor-columns">
+      <fieldset className="pm-fieldset">
+        <legend>{t("pm.connection")}</legend>
+        <div className="pm-form-grid">
+        <label className="pm-field-wide">
           {t("pm.name")}
           <input required maxLength={200} value={draft.name} onChange={(e) => set("name", e.target.value)} />
         </label>
@@ -72,10 +79,6 @@ export function ProfileEditor({
               </select>
             </label>
             <label>
-              {t("pm.host")}
-              <input required value={draft.host} onChange={(e) => set("host", e.target.value)} />
-            </label>
-            <label>
               {t("pm.port")}
               <input
                 required
@@ -85,6 +88,10 @@ export function ProfileEditor({
                 value={draft.port}
                 onChange={(e) => set("port", Number(e.target.value))}
               />
+            </label>
+            <label className="pm-field-wide">
+              {t("pm.host")}
+              <input required value={draft.host} onChange={(e) => set("host", e.target.value)} />
             </label>
             <label>
               {t("pm.username")}
@@ -102,11 +109,29 @@ export function ProfileEditor({
             </label>
           </>
         )}
-        <label>
+        {profile?.nodeType && (
+          <label className="pm-field-wide">
+            {t("pm.replaceNode")}
+            <input type="password" autoComplete="new-password" value={nodeInput} onChange={(e) => setNodeInput(e.target.value)} />
+            <small>{t("pm.passwordHint")}</small>
+          </label>
+        )}
+        </div>
+        {profile?.hasPassword && !profile.nodeType && (
+          <label className="pm-check">
+            <input type="checkbox" checked={clearPassword} onChange={(e) => setClearPassword(e.target.checked)} />
+            {t("pm.removePassword")}
+          </label>
+        )}
+      </fieldset>
+      <fieldset className="pm-fieldset">
+        <legend>{t("pm.policy")}</legend>
+        <div className="pm-form-grid">
+        <label className="pm-field-wide">
           {t("pm.group")}
           <input value={draft.group} onChange={(e) => set("group", e.target.value)} />
         </label>
-        <label>
+        <label className="pm-field-wide">
           {t("pm.limit")}
           <input
             type="number"
@@ -116,46 +141,26 @@ export function ProfileEditor({
             onChange={(e) => set("limitGiB", Number(e.target.value))}
           />
         </label>
-        <label>
+        <label className="pm-field-wide">
           {t("pm.limitAction")}
           <select value={draft.limitAction} onChange={(e) => set("limitAction", e.target.value)}>
             <option value="warn">{t("pm.warn")}</option>
             <option value="block">{t("pm.block")}</option>
           </select>
         </label>
-        <label>
+        <label className="pm-field-wide">
           {t("pm.notes")}
-          <input maxLength={1000} value={draft.notes} onChange={(e) => set("notes", e.target.value)} />
+          <textarea rows={2} maxLength={1000} value={draft.notes} onChange={(e) => set("notes", e.target.value)} />
         </label>
+        </div>
+      </fieldset>
       </div>
-      {profile?.nodeType && (
-        <label>
-          {t("pm.replaceNode")}
-          <input
-            type="password"
-            autoComplete="new-password"
-            value={nodeInput}
-            onChange={(e) => setNodeInput(e.target.value)}
-          />
-          <small>{t("pm.passwordHint")}</small>
-        </label>
-      )}
-      <label className="pm-check">
-        <input type="checkbox" checked={draft.enabled} onChange={(e) => set("enabled", e.target.checked)} />
-        {t("pm.enabled")}
-      </label>
-      {profile?.hasPassword && !profile.nodeType && (
-        <label className="pm-check">
-          <input type="checkbox" checked={clearPassword} onChange={(e) => setClearPassword(e.target.checked)} />
-          {t("pm.removePassword")}
-        </label>
-      )}
-      <div className="pm-toolbar">
+      <div className="pm-form-footer">
+        <button className="btn btn-ghost" disabled={busy} type="button" onClick={onCancel}>
+          {t("pm.cancel")}
+        </button>
         <button className="btn btn-primary" disabled={busy} type="submit">
           {t("pm.save")}
-        </button>
-        <button className="btn" type="button" onClick={onCancel}>
-          {t("pm.cancel")}
         </button>
       </div>
     </form>

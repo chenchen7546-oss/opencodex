@@ -1,4 +1,5 @@
 import { proxyManagerCopy } from "./proxy-manager-copy";
+import { notificationCopy } from "./notification-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 // German — generated from en.ts. Must match TKey set (compile-checked).
 import type { TKey } from "./en";
@@ -8,6 +9,7 @@ import type { TKey } from "./en";
  */
 export const de: Record<TKey, string> = {
   ...proxyManagerCopy.en,
+  ...notificationCopy.en,
   "pws.completion.title": "Modellantwort testen",
   "pws.completion.model": "Zu testendes Modell",
   "pws.completion.choose": "Modell auswählen",
@@ -328,7 +330,7 @@ export const de: Record<TKey, string> = {
   "auth.adminTokenUnavailable": "Der Admin-Token konnte nicht überprüft werden. Versuchen Sie es erneut.",
   "auth.adminTokenHelp": "Dies ist der Admin-Token der OpenCodex-Verwaltungs-API, kein Anbieter-API-Schlüssel. Beim ersten Start schreibt der Proxy ihn nach ~/.opencodex/admin-api-token (oder $OPENCODEX_HOME/admin-api-token); OPENCODEX_ADMIN_AUTH_TOKEN hat Vorrang.",
   "auth.rememberDevice": "Dieses Gerät merken",
-  "auth.rememberDeviceHint": "Eine widerrufbare HttpOnly-Dashboard-Sitzung 30 Tage behalten, nicht das Admin-Token. Erfordert ein direktes HTTPS-Dashboard mit derselben Origin wie die API (oder lokalen Loopback).",
+  "auth.rememberDeviceHint": "Eine widerrufbare HttpOnly-Sitzung 30 Tage behalten, ohne das Admin-Token zu speichern. Unterstützt HTTPS gleicher Origin, Loopback oder vom Server ausdrücklich erlaubtes privates HTTP. HTTP-Sitzungen werden unverschlüsselt übertragen.",
   "connection.forgetDevice": "Dieses Gerät vergessen",
   "connection.forgetDeviceFailed": "Dieses Gerät konnte nicht vergessen werden. Die Sitzung wurde beibehalten.",
   "auth.adminTokenDocsLink": "So finden Sie ihn",

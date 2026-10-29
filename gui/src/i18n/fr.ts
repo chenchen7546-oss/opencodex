@@ -1,4 +1,5 @@
 import { proxyManagerCopy } from "./proxy-manager-copy";
+import { notificationCopy } from "./notification-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 import type { TKey } from "./en";
 
@@ -7,6 +8,7 @@ import type { TKey } from "./en";
  */
 export const fr: Record<TKey, string> = {
   ...proxyManagerCopy.en,
+  ...notificationCopy.en,
   "pws.completion.title": "Test de réponse du modèle",
   "pws.completion.model": "Modèle à tester",
   "pws.completion.choose": "Choisir un modèle",
@@ -260,7 +262,7 @@ export const fr: Record<TKey, string> = {
   "auth.adminTokenUnavailable": "Le jeton d’administration n’a pas pu être vérifié. Réessayez.",
   "auth.adminTokenHelp": "Il s’agit du jeton d’administration de l’API de gestion OpenCodex, pas d’une clé API de fournisseur. Au premier démarrage, le proxy l’écrit dans ~/.opencodex/admin-api-token (ou $OPENCODEX_HOME/admin-api-token), et OPENCODEX_ADMIN_AUTH_TOKEN a la priorité.",
   "auth.rememberDevice": "Mémoriser cet appareil",
-  "auth.rememberDeviceHint": "Conserve une session HttpOnly révocable pendant 30 jours, pas le jeton administrateur. Nécessite un tableau de bord HTTPS direct de même origine que l'API (ou une boucle locale).",
+  "auth.rememberDeviceHint": "Conserve une session HttpOnly révocable pendant 30 jours sans enregistrer le jeton administrateur. Accepte HTTPS de même origine, le loopback ou une origine HTTP privée explicitement autorisée par le serveur. Les sessions HTTP circulent sans chiffrement.",
   "connection.forgetDevice": "Oublier cet appareil",
   "connection.forgetDeviceFailed": "Impossible d’oublier cet appareil. La session a été conservée.",
   "auth.adminTokenDocsLink": "Où le trouver",

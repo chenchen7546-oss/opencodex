@@ -113,3 +113,6 @@ and exported bundle; build files stay in the checkout. The upstream root contain
 
 OAuth link copying falls back inside the active native modal when the Clipboard API is unavailable.
 If the browser refuses both methods, a selectable full-link field appears for manual copying.
+
+Subscription import accepts built-in Shadowsocks obfs, v2ray-plugin, gost-plugin and shadow-tls options, TUIC request timeout and AnyTLS idle-session options. Legacy top-level brutal options are moved under smux; null VLESS flow is omitted. Executable plugins and filesystem credential paths remain disallowed. Adding the same subscription URL again returns a duplicate notice without creating a record.
+Account bindings show aliases and returned email addresses first, with shortened internal IDs underneath. Providers that return neither remain explicitly unnamed; use Edit alias in the row to name them. Aliases are shared with the provider account page and do not change proxy bindings. The main native Codex account retains its upstream read-only alias policy.

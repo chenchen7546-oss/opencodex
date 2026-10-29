@@ -12,6 +12,8 @@ import { readCodexTokensResult } from "../codex/auth-collision";
 interface Row {
   account: EgressAccount;
   label: string;
+  alias?: string;
+  email?: string;
   secrets: string[];
 }
 function rows(config: OcxConfig, secrets = true, providerHint?: string): Row[] {
@@ -22,16 +24,21 @@ function rows(config: OcxConfig, secrets = true, providerHint?: string): Row[] {
       result.push({
         account: { kind: "oauth", provider, id: row.id },
         label: row.alias ?? row.credential.email ?? row.id,
+        alias: row.alias,
+        email: row.credential.email,
         secrets: [row.credential.access, row.credential.refresh].filter(Boolean),
       });
   }
   if (!providerHint || providerHint === "openai") {
     const native = loadCodexAccountStore();
     const main = readCodexTokensResult(undefined, { bounded: true });
+    const mainMetadata = config.codexAccounts?.find(row => row.id === "__main__");
     if (main.status === "ok")
       result.push({
         account: { kind: "codex", provider: "openai", id: "__main__" },
-        label: "__main__",
+        label: mainMetadata?.alias ?? mainMetadata?.email ?? "__main__",
+        alias: mainMetadata?.alias,
+        email: mainMetadata?.email,
         secrets: [main.tokens.access_token],
       });
     for (const row of config.codexAccounts ?? []) {
@@ -40,6 +47,8 @@ function rows(config: OcxConfig, secrets = true, providerHint?: string): Row[] {
       result.push({
         account: { kind: "codex", provider: "openai", id: row.id },
         label: row.alias ?? row.email ?? row.id,
+        alias: row.alias,
+        email: row.email,
         secrets: credential ? [credential.accessToken, credential.refreshToken].filter(Boolean) : [],
       });
     }
@@ -62,6 +71,7 @@ function rows(config: OcxConfig, secrets = true, providerHint?: string): Row[] {
       result.push({
         account: { kind: "key", provider, id: key.id },
         label: ("label" in key && key.label) || key.id,
+        alias: "label" in key && typeof key.label === "string" ? key.label : undefined,
         secrets: resolved ? [resolved] : [],
       });
     }
@@ -104,7 +114,7 @@ export function upstreamAccounts(configSource: OcxConfig | (() => OcxConfig)): A
   const config = () => (typeof configSource === "function" ? configSource() : configSource);
   return {
     list: () => {
-      const accounts = rows(config(), false).map(({ account, label }) => ({ account, label }));
+      const accounts: ReturnType<AccountSource["list"]> = rows(config(), false).map(({ account, label, alias, email }) => ({ account, label, alias, email }));
       for (const provider of new Set([
         ...Object.keys(config().providers),
         ...PROVIDER_REGISTRY.filter((p) => p.oauthId).map((p) => p.oauthId!),

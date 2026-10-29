@@ -90,8 +90,10 @@ export async function handleProxyManagerRoutes(ctx: ManagementContext): Promise<
       });
     }
     if (path === "/subscriptions" && method === "POST") {
-      if (manager.store.subscriptions().length >= 20) throw new ProxyManagerError("subscription_limit_reached");
       const source = subscriptionInput(await readManagementJsonBody(ctx.req));
+      const existing = manager.store.subscriptions();
+      if (existing.some((row) => row.url === source.url)) throw new ProxyManagerError("duplicate_subscription", 409);
+      if (existing.length >= 20) throw new ProxyManagerError("subscription_limit_reached");
       if (source.proxyId && !manager.store.profile(source.proxyId)?.enabled)
         throw new ProxyManagerError("proxy_unavailable");
       manager.store.saveSubscription(source);

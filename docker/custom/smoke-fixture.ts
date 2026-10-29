@@ -64,8 +64,8 @@ if (mode === "seed") {
     "utf8",
   ).trim();
   const origin = "http://127.0.0.1:10100";
-  async function api(path = "", method = "GET", body?: unknown) {
-    const response = await fetch(`${origin}/api/proxy-manager${path}`, {
+  async function managementApi(path: string, method = "GET", body?: unknown) {
+    const response = await fetch(`${origin}${path}`, {
       method,
       signal: AbortSignal.timeout(20_000),
       headers: {
@@ -77,6 +77,8 @@ if (mode === "seed") {
     check(response.ok, `Management request failed (${response.status})`);
     return response.json();
   }
+  const api = (path = "", method = "GET", body?: unknown) =>
+    managementApi(`/api/proxy-manager${path}`, method, body);
   if (mode === "persisted") {
     const snapshot = await api();
     check(
@@ -110,6 +112,22 @@ if (mode === "seed") {
       "PASS: recreation retains bindings, traffic and token; core remains lazy.",
     );
   } else if (mode === "exercise") {
+    const codexConfig = join(process.env.CODEX_HOME!, "config.toml");
+    check((statSync(codexConfig).mode & 0o777) === 0o600, "Codex config permissions incorrect");
+    for (const mode of ["v1", "default"]) {
+      const state = await managementApi("/api/v2", "PUT", { multiAgentMode: mode });
+      check(state.multiAgentMode === mode && !state.enabled, "Fresh container v1/base switch failed");
+    }
+    const mail = await managementApi("/api/notifications");
+    check(!mail.settings.enabled && mail.settings.recipients.length === 0, "Notifications must default to disabled");
+    for (const token of [undefined, dataToken]) {
+      const response = await fetch(`${origin}/api/notifications`, {
+        headers: token ? { "x-opencodex-api-key": token } : {},
+      });
+      await response.body?.cancel();
+      check(response.status === 401 || response.status === 403, "Notifications accepted a non-admin request");
+    }
+    console.log("PASS: default config, v1/base switching and notification admin boundary.");
     const noAuth = await fetch(`${origin}/api/proxy-manager`);
     await noAuth.body?.cancel();
     check(

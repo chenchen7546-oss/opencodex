@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useT } from "../i18n/shared";
-import { Notice } from "../ui";
+import { EmptyState, Notice } from "../ui";
+import { IconCheck, IconDownload, IconLink, IconPlus, IconRefresh, IconSearch, IconServer } from "../icons";
 import { ProfileEditor } from "./proxy-manager/ProfileEditor";
 import { Subscriptions } from "./proxy-manager/Subscriptions";
-import { bytes, keyOf, type Choice, type Profile, type Snapshot, type Traffic } from "./proxy-manager/types";
+import { AccountIdentity } from "./proxy-manager/AccountIdentity";
+import { accountDisplayName, bytes, keyOf, type Choice, type Profile, type Snapshot, type Traffic } from "./proxy-manager/types";
 import "./proxy-manager/styles.css";
 
 export default function ProxyManager({ apiBase }: { apiBase: string }) {
@@ -62,7 +64,7 @@ export default function ProxyManager({ apiBase }: { apiBase: string }) {
       controller.abort();
     };
   }, [load]);
-  async function act(work: () => Promise<void>) {
+  async function act(work: () => Promise<void>, refreshed = false) {
     if (acting.current) return;
     acting.current = true;
     const epoch = generation.current;
@@ -73,7 +75,7 @@ export default function ProxyManager({ apiBase }: { apiBase: string }) {
       await work();
       if (epoch === generation.current) {
         await load();
-        setNotice(t("pm.saved"));
+        setNotice(t(refreshed ? "pm.refreshed" : "pm.saved"));
       }
     } catch (err) {
       if (epoch === generation.current) setError(err instanceof Error ? err.message : "request_failed");
@@ -87,11 +89,11 @@ export default function ProxyManager({ apiBase }: { apiBase: string }) {
   const profiles = data?.profiles ?? [];
   const proxyName = (id: string) =>
     id === "direct" ? t("pm.direct") : (profiles.find((p) => p.id === id)?.name ?? id);
-  const choiceName = (choice: Choice) =>
-    choice.mode === "proxy" ? proxyName(choice.proxyId) : t(choice.mode === "direct" ? "pm.direct" : "pm.inherit");
+  const choiceName = (choice: Choice, providerDefault = false) =>
+    choice.mode === "proxy" ? proxyName(choice.proxyId) : t(choice.mode === "direct" ? "pm.direct" : providerDefault ? "pm.systemNetwork" : "pm.accountInherit");
   const query = filter.toLocaleLowerCase();
   const accounts = (data?.accounts ?? []).filter((row) =>
-    [row.label, row.account.provider, row.account.id, choiceName(row.choice)]
+    [accountDisplayName(row, t), row.email, row.account.provider, row.account.id, choiceName(row.choice, row.account.id === "@new")]
       .join(" ")
       .toLocaleLowerCase()
       .includes(query),
@@ -146,55 +148,59 @@ export default function ProxyManager({ apiBase }: { apiBase: string }) {
   }
   return (
     <div className="pm-page">
-      <div className="pm-toolbar">
+      <div className="pm-toolbar pm-page-head">
         <div>
           <h1>{t("pm.title")}</h1>
           <p className="muted">{t("pm.subtitle")}</p>
         </div>
-        <button className="btn" disabled={busy} onClick={() => void act(async () => {})}>
+        {notice && <span className="pm-saved" role="status"><IconCheck aria-hidden="true" />{notice}</span>}
+        <button className="btn btn-ghost" disabled={busy} onClick={() => void act(async () => {}, true)}>
+          <IconRefresh aria-hidden="true" />
           {t("pm.refresh")}
         </button>
       </div>
-      <nav className="pm-tabs" aria-label={t("pm.title")}>
+      <nav className="page-tabs pm-tabs" aria-label={t("pm.title")}>
         {(["proxies", "accounts", "traffic", "settings"] as const).map((value) => (
           <button
             type="button"
             key={value}
             aria-current={tab === value ? "page" : undefined}
-            className={tab === value ? "btn btn-primary" : "btn"}
-            onClick={() => setTab(value)}
+            className={`page-tab${tab === value ? " page-tab--active" : ""}`}
+            onClick={() => { setTab(value); setFilter(""); setNotice(""); }}
           >
             {t(`pm.${value}`)}
           </button>
         ))}
       </nav>
-      {error && <Notice tone="warn">{t("pm.failed", { code: error })}</Notice>}
-      {notice && <div role="status">{notice}</div>}
+      {error && <Notice tone="warn">{error === "duplicate_subscription" ? t("pm.duplicateSubscription") : error === "unsupported_proxy_node_field" ? t("pm.unsupportedNodeField") : t("pm.failed", { code: error })}</Notice>}
       {(data?.persistenceFailed || traffic?.persistenceFailed) && <Notice tone="warn">{t("pm.incomplete")}</Notice>}
       {!data && !error && <p>{t("pm.loading")}</p>}
-      {data && (tab === "proxies" || tab === "accounts") && (
-        <input
-          className="pm-search"
-          aria-label={t("pm.search")}
-          placeholder={t("pm.search")}
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
-      )}
       {data && tab === "proxies" && (
         <>
-          <p className="muted">{t("pm.serverHint")}</p>
-          <Notice tone={data.core?.installed ? "ok" : "warn"}>
-            {t(data.core?.running ? "pm.coreRunning" : data.core?.installed ? "pm.coreReady" : "pm.coreMissing")}
-          </Notice>
-          <div className="pm-toolbar">
-            <button className="btn btn-primary" onClick={() => setEditor("new")}>
+          <div className="pm-runtime">
+            <span className={data.core?.installed ? "pm-core-status" : "pm-warning"}>
+              <IconServer aria-hidden="true" />
+              {t(data.core?.running ? "pm.coreRunning" : data.core?.installed ? "pm.coreReady" : "pm.coreMissing")}
+            </span>
+            <span className="muted">{t("pm.serverHint")}</span>
+          </div>
+          <section className="pm-section pm-profiles" aria-label={t("pm.proxies")}>
+          <div className="pm-section-head">
+            <h2>{t("pm.proxies")} <span className="pm-count">{profiles.length}</span></h2>
+            <div className="pm-actions">
+            <button className="btn btn-ghost" onClick={() => { setImportText(""); setEditor(null); }} disabled={busy}>
+              <IconDownload aria-hidden="true" />{t("pm.import")}
+            </button>
+            <button className="btn btn-primary" onClick={() => { setEditor("new"); setImportText(null); }} disabled={busy}>
+              <IconPlus aria-hidden="true" />
               {t("pm.add")}
             </button>
-            <button className="btn" onClick={() => setImportText("")}>
-              {t("pm.import")}
-            </button>
+            </div>
           </div>
+          {profiles.length > 0 && <label className="pm-search-wrap"><IconSearch aria-hidden="true" />
+            <input className="pm-search" aria-label={t("pm.searchProxies")} placeholder={t("pm.searchProxies")}
+              value={filter} onChange={(e) => setFilter(e.target.value)} />
+          </label>}
           {editor && (
             <ProfileEditor
               key={editor === "new" ? "new" : editor.id}
@@ -228,17 +234,15 @@ export default function ProxyManager({ apiBase }: { apiBase: string }) {
                 {t("pm.importHint")}
                 <textarea required rows={6} value={importText} onChange={(e) => setImportText(e.target.value)} />
               </label>
-              <div className="pm-toolbar">
-                <button className="btn btn-primary" disabled={busy}>
-                  {t("pm.import")}
-                </button>
-                <button type="button" className="btn" onClick={() => setImportText(null)}>
+              <div className="pm-form-footer">
+                <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => setImportText(null)}>
                   {t("pm.cancel")}
                 </button>
+                <button className="btn btn-primary" disabled={busy}>{t("pm.import")}</button>
               </div>
             </form>
           )}
-          <div className="pm-table">
+          {filteredProfiles.length > 0 ? <div className="pm-table" role="region" aria-label={t("pm.proxies")} tabIndex={0}>
             <table>
               <thead>
                 <tr>
@@ -248,7 +252,7 @@ export default function ProxyManager({ apiBase }: { apiBase: string }) {
                   <th>{t("pm.accounts")}</th>
                   <th>{t("pm.month")}</th>
                   <th>{t("pm.exit")}</th>
-                  <th aria-label={t("pm.edit")} />
+                  <th>{t("pm.actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -276,7 +280,7 @@ export default function ProxyManager({ apiBase }: { apiBase: string }) {
                     <td>
                       <div className="pm-actions">
                         <button
-                          className="btn"
+                          className="btn btn-ghost btn-sm"
                           disabled={busy}
                           title={t("pm.probeHint")}
                           onClick={() =>
@@ -298,11 +302,11 @@ export default function ProxyManager({ apiBase }: { apiBase: string }) {
                         >
                           {t("pm.probe")}
                         </button>
-                        <button className="btn" onClick={() => setEditor(profile)}>
+                        <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => { setEditor(profile); setImportText(null); }}>
                           {t("pm.edit")}
                         </button>
                         <button
-                          className="btn"
+                          className="btn btn-ghost btn-sm pm-danger"
                           disabled={busy || profile.bindings > 0}
                           onClick={() => {
                             if (window.confirm(t("pm.deleteConfirm", { name: profile.name })))
@@ -319,15 +323,24 @@ export default function ProxyManager({ apiBase }: { apiBase: string }) {
                 ))}
               </tbody>
             </table>
-            {!filteredProfiles.length && <p>{t("pm.empty")}</p>}
-          </div>
+          </div> : <EmptyState className="pm-empty" icon={<span className="pm-empty-icon"><IconLink aria-hidden="true" /></span>}
+            title={t(filter ? "pm.noMatches" : "pm.emptyProxies")}>
+            <p>{t(filter ? "pm.noMatchesHint" : "pm.emptyProxiesHint")}</p>
+            {filter && <button className="btn btn-ghost" onClick={() => setFilter("")}>{t("pm.clearFilter")}</button>}
+          </EmptyState>}
+          </section>
           <Subscriptions key={apiBase} data={data} busy={busy} request={request} act={act} />
         </>
       )}
       {data && tab === "accounts" && (
         <>
+          <label className="pm-search-wrap"><IconSearch aria-hidden="true" />
+            <input className="pm-search" aria-label={t("pm.searchAccounts")} placeholder={t("pm.searchAccounts")}
+              value={filter} onChange={(e) => setFilter(e.target.value)} />
+          </label>
           <p className="muted">{t("pm.cliLimit")}</p>
-          <div className="pm-toolbar">
+          <p className="muted">{t("pm.bindingHelp")}</p>
+          <div className="pm-toolbar pm-selection-bar">
             <span>{t("pm.selected", { count: selected.size })}</span>
             <select aria-label={t("pm.current")} value={assignment} onChange={(e) => setAssignment(e.target.value)}>
               <option value="inherit">{t("pm.inherit")}</option>
@@ -392,7 +405,7 @@ export default function ProxyManager({ apiBase }: { apiBase: string }) {
                     <td>
                       <input
                         type="checkbox"
-                        aria-label={row.label}
+                        aria-label={accountDisplayName(row, t)}
                         checked={selected.has(keyOf(row.account))}
                         onChange={(e) =>
                           setSelected((old) => {
@@ -405,16 +418,17 @@ export default function ProxyManager({ apiBase }: { apiBase: string }) {
                       />
                     </td>
                     <td>
-                      {row.account.id === "@new" ? t("pm.newAccount") : row.label}
-                      {row.orphaned && <small>{t("pm.orphan")}</small>}
+                      <AccountIdentity row={row} apiBase={apiBase} busy={busy} act={act} />
                     </td>
                     <td>{row.account.provider}</td>
-                    <td>{choiceName(row.choice)}</td>
+                    <td>{choiceName(row.choice, row.account.id === "@new")}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {!accounts.length && <p>{t("pm.empty")}</p>}
+            {!accounts.length && <EmptyState className="pm-empty" title={t(filter ? "pm.noMatches" : "pm.empty")}>
+              {filter && <button className="btn btn-ghost" onClick={() => setFilter("")}>{t("pm.clearFilter")}</button>}
+            </EmptyState>}
           </div>
         </>
       )}
@@ -452,7 +466,7 @@ export default function ProxyManager({ apiBase }: { apiBase: string }) {
               </div>
             ))}
           </div>
-          <div className="pm-table">
+          <div className="pm-table" role="region" aria-label={t("pm.traffic")} tabIndex={0}>
             <table>
               <thead>
                 <tr>
@@ -479,6 +493,7 @@ export default function ProxyManager({ apiBase }: { apiBase: string }) {
                 ))}
               </tbody>
             </table>
+            {!grouped.length && <EmptyState className="pm-empty" title={t("pm.emptyTraffic")}>{t("pm.emptyTrafficHint")}</EmptyState>}
           </div>
           <details>
             <summary>{t("pm.detail")}</summary>
@@ -540,9 +555,9 @@ export default function ProxyManager({ apiBase }: { apiBase: string }) {
               <input name="flush" type="number" min={5} max={60} defaultValue={data.settings.flushIntervalMs / 1000} />
             </label>
           </div>
-          <button className="btn btn-primary" disabled={busy}>
+          <div className="pm-form-footer"><button className="btn btn-primary" disabled={busy}>
             {t("pm.save")}
-          </button>
+          </button></div>
         </form>
       )}
     </div>

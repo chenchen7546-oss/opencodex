@@ -1,4 +1,5 @@
 import { proxyManagerCopy } from "./proxy-manager-copy";
+import { notificationCopy } from "./notification-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 import type { TKey } from "./en";
 
@@ -7,6 +8,7 @@ import type { TKey } from "./en";
  */
 export const ru: Record<TKey, string> = {
   ...proxyManagerCopy.en,
+  ...notificationCopy.en,
   "pws.completion.title": "Проверка ответа модели",
   "pws.completion.model": "Модель для проверки",
   "pws.completion.choose": "Выберите модель",
@@ -330,7 +332,7 @@ export const ru: Record<TKey, string> = {
   "auth.adminTokenUnavailable": "Не удалось проверить токен администратора. Повторите попытку.",
   "auth.adminTokenHelp": "Это административный токен управляющего API OpenCodex, а не ключ API провайдера. При первом запуске прокси записывает его в ~/.opencodex/admin-api-token (или $OPENCODEX_HOME/admin-api-token), а OPENCODEX_ADMIN_AUTH_TOKEN переопределяет это значение.",
   "auth.rememberDevice": "Запомнить это устройство",
-  "auth.rememberDeviceHint": "Сохраняет отзываемую HttpOnly-сессию на 30 дней, а не токен администратора. Требуется прямой доступ к панели по HTTPS с тем же источником, что и API (или локальный loopback).",
+  "auth.rememberDeviceHint": "Сохраняет отзываемую HttpOnly-сессию на 30 дней без токена администратора. Поддерживает HTTPS того же источника, loopback или явно разрешённый сервером частный HTTP-адрес. HTTP-сессии передаются без шифрования.",
   "connection.forgetDevice": "Забыть это устройство",
   "connection.forgetDeviceFailed": "Не удалось забыть это устройство. Сессия сохранена.",
   "auth.adminTokenDocsLink": "Как его найти",

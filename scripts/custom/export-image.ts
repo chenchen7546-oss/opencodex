@@ -8,7 +8,7 @@ import { pipeline } from "node:stream/promises";
 import { createGzip } from "node:zlib";
 
 const root = resolve(import.meta.dir, "../..");
-const image = process.argv[2] ?? "opencodex-custom:20261029-1";
+const image = process.argv[2] ?? "opencodex-custom:20261029-4";
 if (!/^[a-zA-Z0-9][a-zA-Z0-9._/:@-]*$/.test(image))
   throw new Error("Invalid image reference");
 const inspect = Bun.spawn(["docker", "image", "inspect", image], {
@@ -61,6 +61,9 @@ const example = (
   await readFile(resolve(root, "deploy/.env.example"), "utf8")
 ).replace(/^OPENCODEX_IMAGE=.*$/m, `OPENCODEX_IMAGE=${image}`);
 await writeFile(resolve(destination, ".env.example"), example, { flag: "wx" });
+const serverExample = (await readFile(resolve(root, "deploy/.env.centos7.example"), "utf8"))
+  .replace(/^OPENCODEX_IMAGE=.*$/m, `OPENCODEX_IMAGE=${image}`);
+await writeFile(resolve(destination, ".env.centos7.example"), serverExample, { flag: "wx" });
 await copyFile(
   resolve(root, "deploy/README.zh-CN.md"),
   resolve(destination, "README.zh-CN.md"),
@@ -95,6 +98,7 @@ const files = [
   archive,
   "compose.yaml",
   ".env.example",
+  ".env.centos7.example",
   "README.zh-CN.md",
   "acceptance.json",
   "release.json",

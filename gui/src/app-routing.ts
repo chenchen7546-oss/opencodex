@@ -7,6 +7,7 @@ export type Page =
   | "startup"
   | "providers"
   | "proxy-manager"
+  | "notifications"
   | "models"
   | "subagents"
   | "advisor"
@@ -24,6 +25,7 @@ export const VALID_PAGES = new Set<Page>([
   "startup",
   "providers",
   "proxy-manager",
+  "notifications",
   "models",
   "subagents",
   "advisor",

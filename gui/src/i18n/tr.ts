@@ -1,4 +1,5 @@
 import { proxyManagerCopy } from "./proxy-manager-copy";
+import { notificationCopy } from "./notification-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 // Turkish — generated from en.ts. Must match TKey set (compile-checked).
 import type { TKey } from "./en";
@@ -8,6 +9,7 @@ import type { TKey } from "./en";
  */
 export const tr: Record<TKey, string> = {
   ...proxyManagerCopy.en,
+  ...notificationCopy.en,
   "pws.completion.title": "Model yanıt testi",
   "pws.completion.model": "Test edilecek model",
   "pws.completion.choose": "Bir model seçin",
@@ -262,7 +264,7 @@ export const tr: Record<TKey, string> = {
   "auth.adminTokenUnavailable": "Yönetici jetonu doğrulanamadı. Tekrar deneyin.",
   "auth.adminTokenHelp": "Bu, sağlayıcı API anahtarı değil, OpenCodex yönetim API’sinin yönetici jetonudur. Proxy ilk açılışta bunu ~/.opencodex/admin-api-token (veya $OPENCODEX_HOME/admin-api-token) dosyasına yazar; OPENCODEX_ADMIN_AUTH_TOKEN bu değeri geçersiz kılar.",
   "auth.rememberDevice": "Bu cihazı hatırla",
-  "auth.rememberDeviceHint": "Yönetici belirteci yerine iptal edilebilir HttpOnly oturumunu 30 gün tutar. API ile aynı origin'de doğrudan bir HTTPS paneli (veya yerel loopback) gerekir.",
+  "auth.rememberDeviceHint": "Yönetici belirtecini kaydetmeden iptal edilebilir HttpOnly oturumunu 30 gün tutar. Aynı origin HTTPS, loopback veya sunucunun açıkça izin verdiği özel HTTP adresini destekler. HTTP oturumları şifrelenmeden aktarılır.",
   "connection.forgetDevice": "Bu cihazı unut",
   "connection.forgetDeviceFailed": "Bu cihaz unutulamadı. Oturum korundu.",
   "auth.adminTokenDocsLink": "Nasıl bulunur",

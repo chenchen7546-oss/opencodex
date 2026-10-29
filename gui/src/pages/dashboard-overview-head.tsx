@@ -65,11 +65,6 @@ export function DashboardOverviewHead({
                 ))}
              </div>
            </div>
-            {maError && (
-              <div role="alert" className="text-caption" style={{ color: "var(--red)", marginTop: 4, textAlign: "center", maxWidth: 280, wordBreak: "break-word" }}>
-                {maError}
-              </div>
-            )}
          </div>
          <div className="stat" aria-busy={healthLoading || undefined}>
            <div className="label">{t("dash.status")}</div>
@@ -91,6 +86,12 @@ export function DashboardOverviewHead({
           </div>
         </div>
 
+        {maError && (
+          <div role="alert" className="notice notice-err" style={{ overflowWrap: "anywhere" }}>
+            <IconAlert aria-hidden="true" />
+            <div style={{ minWidth: 0 }}>{maError}</div>
+          </div>
+        )}
         <div className="startup-health-slot" aria-live="polite">
           {startupHealth ? (
             <button type="button" className="startup-health-bar" onClick={() => navigateHash("startup")}>

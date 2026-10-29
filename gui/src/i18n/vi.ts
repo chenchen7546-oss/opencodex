@@ -1,4 +1,5 @@
 import { proxyManagerCopy } from "./proxy-manager-copy";
+import { notificationCopy } from "./notification-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 // Vietnamese — generated from en.ts. Must match TKey set (compile-checked).
 import type { TKey } from "./en";
@@ -9,6 +10,7 @@ import type { TKey } from "./en";
  */
 export const vi: Record<TKey, string> = {
   ...proxyManagerCopy.en,
+  ...notificationCopy.en,
   "pws.completion.title": "Kiểm tra phản hồi mô hình",
   "pws.completion.model": "Mô hình cần kiểm tra",
   "pws.completion.choose": "Chọn mô hình",
@@ -260,7 +262,7 @@ export const vi: Record<TKey, string> = {
   "auth.adminTokenUnavailable": "Không thể xác minh token quản trị. Hãy thử lại.",
   "auth.adminTokenHelp": "Đây là token quản trị quản lý OpenCodex, không phải là API key của provider. Proxy ghi nó vào ~/.opencodex/admin-api-token (hoặc $OPENCODEX_HOME/admin-api-token) trong lần khởi động đầu tiên và OPENCODEX_ADMIN_AUTH_TOKEN sẽ ghi đè nó.",
   "auth.rememberDevice": "Ghi nhớ thiết bị này",
-  "auth.rememberDeviceHint": "Giữ phiên HttpOnly có thể thu hồi trong 30 ngày, không lưu mã quản trị. Yêu cầu bảng điều khiển HTTPS trực tiếp cùng nguồn gốc với API (hoặc loopback cục bộ).",
+  "auth.rememberDeviceHint": "Giữ phiên HttpOnly có thể thu hồi trong 30 ngày mà không lưu mã quản trị. Hỗ trợ HTTPS cùng nguồn gốc, loopback hoặc địa chỉ HTTP riêng được máy chủ cho phép rõ ràng. Phiên HTTP được truyền không mã hóa.",
   "connection.forgetDevice": "Quên thiết bị này",
   "connection.forgetDeviceFailed": "Không thể quên thiết bị này. Phiên vẫn được giữ.",
   "auth.adminTokenDocsLink": "Cách tìm nó",

@@ -7,11 +7,14 @@
 设计和接口边界：[架构文档](structure/account-proxy-management.md)。
 当前部署方案：[Docker Compose 详细步骤](deploy/README.zh-CN.md)。定制镜像集成 Mihomo，构建与运行配置分离；下方 systemd 内容仅作为非容器部署参考。
 
+20261029-4 增加[邮箱通知](docs-site/src/content/docs/zh-cn/guides/email-notifications.md)：通用 SMTP、多个收件邮箱分别启停、测试邮件、Codex 重新认证事件去重及发送记录。代理管理改为分区表单、明确空状态和响应式操作区。容器首次初始化补齐缺失的 Codex `config.toml`，保留已有配置；v1 切换错误提示改为整行显示。
+
 ## 合并上游时的主要检查点
 
 | 定制范围 | 上游变更后需要核查的内容 |
 | --- | --- |
 | `src/proxy-manager/` | 独立数据层、路由、订阅、内核和统计；通常直接保留 |
+| `src/notifications/`、`notification-routes.ts`、Notifications 页面 | 独立 SMTP／SQLite 模块；账号状态只通过 `runtime.ts` 适配现有 Codex 快照，界面只接管理接口 |
 | `src/lib/account-egress*.ts`、`account-fetch.ts` | 核心仅依赖接口，不反向导入可选模块 |
 | `src/lib/proxy-env.ts` | configuredOutboundFetch 仍经过账号路由，嵌套调用不重复统计 |
 | `src/lib/provider-outbound.ts` | 验证／模型发现不能绕过绑定；保留 DNS 和目标安全检查 |
@@ -141,3 +144,4 @@ SS／VLESS／Hysteria2 等需要额外 Mihomo 内存，普通 HTTP／SOCKS 不�
 备份时停止服务，复制整个私有状态目录，包括 `proxy-manager/` 的数据库与 WAL 文件。
 该目录含代理密码、节点密钥和订阅凭据，权限应仅限服务用户。迁移只复制状态，不把它放进 Git。
 Mihomo 使用的 `core-*` 是私有临时配置；异常退出遗留的目录可在所有服务停止后清理。
+- 2026-10-29：订阅内置插件与超时参数兼容、防重复；指定内网 HTTP 地址记住设备；账号名称/邮箱展示及复用上游别名编辑接口。
