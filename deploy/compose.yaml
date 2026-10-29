@@ -1,0 +1,41 @@
+name: opencodex-custom
+
+services:
+  hub:
+    image: ${OPENCODEX_IMAGE:-opencodex-custom:20261029-1}
+    platform: ${OPENCODEX_PLATFORM:-linux/amd64}
+    pull_policy: never
+    init: true
+    read_only: true
+    environment:
+      CODEX_HOME: /home/bun/.codex
+      OCX_DISABLE_UPDATE_CHECK: "1"
+      OPENCODEX_PROXY_CORE: /usr/local/bin/mihomo
+    ports:
+      - "${OPENCODEX_BIND_ADDRESS:-127.0.0.1}:${OPENCODEX_PORT:-10100}:10100"
+    volumes:
+      - ocx-state:/home/bun/.opencodex
+      - codex-state:/home/bun/.codex
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: ${OPENCODEX_MEMORY_LIMIT:-640m}
+    mem_reservation: ${OPENCODEX_MEMORY_RESERVATION:-384m}
+    # This is RAM + swap, not swap alone. Defaults allow at most 256 MiB swap.
+    memswap_limit: ${OPENCODEX_MEMORY_SWAP_LIMIT:-896m}
+    cpus: ${OPENCODEX_CPUS:-1.0}
+    pids_limit: 256
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+volumes:
+  ocx-state:
+  codex-state:

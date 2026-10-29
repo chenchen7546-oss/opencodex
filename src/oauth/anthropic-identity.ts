@@ -1,3 +1,4 @@
+import { fetch } from "../lib/account-fetch";
 /** Private account proof from an authenticated Anthropic response, bound to its exact bearer. */
 import { hasClaudeCredentialContinuity } from "./local-token-detect";
 import { createHash } from "node:crypto";

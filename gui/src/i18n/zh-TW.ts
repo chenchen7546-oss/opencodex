@@ -1,8 +1,10 @@
+import { proxyManagerCopy } from "./proxy-manager-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 import type { TKey } from "./en";
 
 /** Traditional Chinese (Taiwan) UI strings — keys must match `en.ts` 1:1. */
 export const zhTW: Record<TKey, string> = {
+  ...proxyManagerCopy.zh,
   "pws.completion.title": "模型回應測試",
   "pws.completion.model": "要測試的模型",
   "pws.completion.choose": "選擇模型",
@@ -560,6 +562,7 @@ export const zhTW: Record<TKey, string> = {
   "prov.dontOpenBrowserHint": "適用於使用其他瀏覽器設定檔登入，或儀表板與代理不在同一台機器上。",
   "prov.linkCopied": "已複製",
   "prov.linkCopyUnavailable": "剪貼簿不可用",
+  "prov.linkManualCopy": "自動複製遭瀏覽器阻擋。點選下方文字框全選，按 Ctrl+C（Mac 使用 ⌘C），或長按複製。",
   "prov.deviceCode": "裝置驗證碼",
   "prov.copyCode": "複製驗證碼",
   "prov.copyCodeAndOpen": "複製驗證碼並開啟",

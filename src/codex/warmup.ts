@@ -1,3 +1,4 @@
+import { fetch } from "../lib/account-fetch";
 import { readBoundedResponseBody } from "../lib/bounded-body";
 
 export class CodexWarmupError extends Error {

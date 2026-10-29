@@ -89,3 +89,42 @@ test("prefers the Clipboard API and never touches the legacy path", async () => 
   expect(writeText).toHaveBeenCalledWith("https://auth.example/authorize");
   expect(execCommand).not.toHaveBeenCalled();
 });
+
+test("copies inside the active dialog and restores focus and the original input selection", async () => {
+  useClipboard(undefined);
+  const dialog = win.document.createElement("dialog");
+  dialog.setAttribute("open", "");
+  const input = win.document.createElement("input");
+  input.value = "existing redirect";
+  dialog.append(input);
+  win.document.body.append(dialog);
+  input.focus();
+  input.setSelectionRange(2, 6);
+  useExecCommand(() => {
+    const area = dialog.querySelector("textarea");
+    expect(area?.value).toBe("https://auth.example.test/authorize?state=fixture");
+    expect(win.document.activeElement).toBe(area);
+    expect(area?.selectionStart).toBe(0);
+    expect(area?.selectionEnd).toBe(area?.value.length);
+    return true;
+  });
+  expect(await copyTextToClipboard("https://auth.example.test/authorize?state=fixture")).toBe(true);
+  expect(win.document.activeElement).toBe(input);
+  expect([input.selectionStart, input.selectionEnd]).toEqual([2, 6]);
+  expect(dialog.querySelector("textarea")).toBeNull();
+});
+
+test("a denied Clipboard API still copies within the modal instead of inert body", async () => {
+  useClipboard({ writeText: async () => { throw new Error("denied"); } });
+  const dialog = win.document.createElement("dialog");
+  dialog.setAttribute("open", "");
+  win.document.body.append(dialog);
+  useExecCommand(() => !!dialog.querySelector("textarea"));
+  expect(await copyTextToClipboard("fixture login code")).toBe(true);
+});
+
+test("a throwing clipboard getter also reaches the legacy fallback", async () => {
+  Object.defineProperty(win.navigator, "clipboard", { configurable: true, get() { throw new Error("denied"); } });
+  useExecCommand(() => true);
+  expect(await copyTextToClipboard("fixture login code")).toBe(true);
+});

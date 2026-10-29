@@ -1,3 +1,4 @@
+import { fetch } from "../lib/account-fetch";
 /**
  * Cursor OAuth — PKCE poll flow. Standalone: talks directly to cursor.com / api2.cursor.sh,
  * with no dependency on a local Cursor IDE/CLI install or on jawcode. Ported from jawcode

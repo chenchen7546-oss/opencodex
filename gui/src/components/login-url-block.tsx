@@ -55,6 +55,13 @@ export function LoginUrlBlock({ url, openLabel }: { url: string; openLabel?: str
           </a>
         )}
       </div>
+      {outcome === "unavailable" && (
+        <label className="login-hint-paste">
+          <span className="muted text-label">{t("prov.linkManualCopy")}</span>
+          <textarea className="input" readOnly rows={4} value={url} aria-label={t("prov.copyLink")}
+            onFocus={event => event.currentTarget.select()} onClick={event => event.currentTarget.select()} />
+        </label>
+      )}
     </div>
   );
 }

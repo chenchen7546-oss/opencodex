@@ -1,5 +1,7 @@
 # Transport Inventory
 
+Managed account routes enter final sends and discovery before transport selection under the [account proxy contract](../account-proxy-management.md#identity-and-route-selection). Explicit routes downgrade native WebSocket and Cursor HTTP/2 where supported; opaque executors fail closed.
+
 Shared header helpers and bounded local JSON reads follow the
 [local timeout contract](timeouts.md). Disabling
 their clocks retains byte caps, cancellation, manual redirects and transport credential fences.

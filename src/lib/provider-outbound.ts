@@ -11,6 +11,7 @@ import { pinnedHttpGet, pinnedHttpPost } from "./pinned-http";
 import { configuredOutboundFetch, effectiveProxyFor, noProxyMatches, normalizeProxyHostname, schemeMatchedProxyFor } from "./proxy-env";
 import { InvalidProviderEgressError, resolveProviderEgress } from "./provider-egress";
 import { publicProviderBaseUrl } from "./provider-url";
+import { ACCOUNT_EGRESS_SENT, accountEgressInit, currentAccountEgress, sendWithAccountEgress } from "./account-egress";
 
 type ProviderGetInit = Omit<RequestInit, "body" | "method" | "redirect">;
 type ProviderPostInit = ProviderGetInit & { body: string };
@@ -228,6 +229,7 @@ async function providerOutboundRequest(
   rawInit: ProviderGetInit | ProviderPostInit,
   dependencies: ProviderOutboundDependencies = {},
 ): Promise<Response> {
+  if (!(rawInit as Record<symbol,unknown>)[ACCOUNT_EGRESS_SENT]) return sendWithAccountEgress(url,{...rawInit,...accountEgressInit({...currentAccountEgress(),provider:name})},(_url,init)=>providerOutboundRequest(name,provider,url,method,{...init,[ACCOUNT_EGRESS_SENT]:true} as ProviderGetInit|ProviderPostInit,dependencies));
   // See PROVIDER_OUTBOUND_DEFAULT_USER_AGENT: this wrapper only carries proxy-originated
   // diagnostic traffic, so it identifies itself unless the caller already did.
   const init = withDefaultOutboundUserAgent(rawInit);
@@ -253,7 +255,7 @@ async function providerOutboundRequest(
     // A caller-owned executor decides its own transport, so a provider egress route cannot be
     // applied to it. Refusing is the only honest answer: running the executor anyway would send
     // the request by whatever route that executor picked while the configuration says otherwise.
-    if (resolveProviderEgress({ providerName: name, provider, url }).kind !== "inherit") {
+    if ((init as RequestInit&{proxy?:unknown}).proxy !== undefined || resolveProviderEgress({ providerName: name, provider, url }).kind !== "inherit") {
       throw new InvalidProviderEgressError(
         "proxy",
         "a caller-supplied fetch executor owns its own routing, so this route cannot be applied",
@@ -285,7 +287,8 @@ async function providerOutboundRequest(
   const parsed = postUrl ?? new URL(url);
   // The provider's own route, decided against this request URL. `inherit` leaves every value
   // below exactly as the global decision computed it.
-  const egress = resolveProviderEgress({ providerName: name, provider, url: parsed });
+  const managedProxy = (init as RequestInit&{proxy?:string|false}).proxy;
+  const egress = managedProxy !== undefined ? resolveProviderEgress({providerName:name,provider:{proxy:managedProxy===false?"direct":managedProxy},url:parsed}) : resolveProviderEgress({ providerName: name, provider, url: parsed });
   const providerProxy = egress.kind === "proxy" ? egress.proxyUrl : null;
   // Snapshot the proxy fetch would actually use once, before the DNS await, so admission
   // and transport below reason about the same value. `null` here means "no proxy fetch

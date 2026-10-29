@@ -1,3 +1,4 @@
+import { proxyManagerCopy } from "./proxy-manager-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 import type { TKey } from "./en";
 
@@ -5,6 +6,7 @@ import type { TKey } from "./en";
  * French i18n catalog. Must match the `TKey` set.
  */
 export const fr: Record<TKey, string> = {
+  ...proxyManagerCopy.en,
   "pws.completion.title": "Test de réponse du modèle",
   "pws.completion.model": "Modèle à tester",
   "pws.completion.choose": "Choisir un modèle",
@@ -691,6 +693,7 @@ export const fr: Record<TKey, string> = {
   "prov.dontOpenBrowserHint": "Utile pour un autre profil de navigateur, ou quand le tableau de bord n'est pas sur la machine du proxy.",
   "prov.linkCopied": "Copié",
   "prov.linkCopyUnavailable": "Presse-papiers indisponible",
+  "prov.linkManualCopy": "La copie automatique est bloquée. Sélectionnez le champ ci-dessous et appuyez sur Ctrl+C (⌘C sur Mac), ou faites un appui long pour copier.",
   "prov.deviceCode": "Code de l’appareil",
   "prov.copyCode": "Copier le code",
   "prov.copyCodeAndOpen": "Copier le code et ouvrir",

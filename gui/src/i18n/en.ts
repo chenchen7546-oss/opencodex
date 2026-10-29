@@ -1,3 +1,4 @@
+import { proxyManagerCopy } from "./proxy-manager-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 // English — source of truth. Its keys define the TKey type; de/fr/ko/zh/zh-TW/ru/ja/tr must match (compile-checked).
 // Strings with {cmd} render a <code> chip via <Trans>; {var} are plain interpolations.
@@ -7,6 +8,7 @@ import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
  * `{var}` are plain interpolations.
  */
 export const en = {
+  ...proxyManagerCopy.en,
   "pws.completion.title": "Model completion test",
   "pws.completion.model": "Model to test",
   "pws.completion.choose": "Choose a model",
@@ -704,6 +706,7 @@ export const en = {
   "prov.dontOpenBrowserHint": "Useful for a different browser profile, or when the dashboard is not on the proxy's machine.",
   "prov.linkCopied": "Copied",
   "prov.linkCopyUnavailable": "Clipboard unavailable",
+  "prov.linkManualCopy": "Automatic copying is blocked. Select the field below and press Ctrl+C (⌘C on Mac), or long-press to copy.",
   "prov.deviceCode": "Device code",
   "prov.copyCode": "Copy code",
   "prov.copyCodeAndOpen": "Copy code & open",

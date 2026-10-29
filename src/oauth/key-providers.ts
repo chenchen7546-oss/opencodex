@@ -1,3 +1,5 @@
+import { fetch } from "../lib/account-fetch";
+import { currentAccountEgress, withAccountEgress } from "../lib/account-egress";
 import type { OcxProviderConfig } from "../types";
 import { deriveKeyLoginMap, enrichProviderFromRegistry, type DerivedKeyLoginProvider } from "../providers/derive";
 import { providerModelsUrl, resolveProviderModelDiscoveryUrl } from "../providers/model-discovery";
@@ -72,6 +74,9 @@ export async function validateApiKey(
   provider: KeyLoginProvider,
   key: string,
 ): Promise<boolean | "unknown"> {
+  return withAccountEgress({...currentAccountEgress(),provider:providerName,purpose:"login"},()=>validateApiKeyThroughProxy(providerName,provider,key));
+}
+async function validateApiKeyThroughProxy(providerName:string,provider:KeyLoginProvider,key:string):Promise<boolean|"unknown"> {
   try {
     // A public model catalog cannot prove that the supplied key is valid. Returning unknown keeps
     // the best-effort login flow available without persisting a false-positive validation result.

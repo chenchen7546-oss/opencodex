@@ -1,3 +1,4 @@
+import { withAccountEgress } from "../lib/account-egress";
 import { listCodexAuthAccountsSnapshot } from "../codex/auth-api";
 import { isAnthropicInstanceId, configuredAnthropicInstance } from "./anthropic-instance";
 import { ANTIGRAVITY_OAUTH_STORE_KEY } from "./antigravity-quota-identity";
@@ -345,7 +346,10 @@ export async function fetchProviderQuotaReports(config: OcxConfig, forceRefresh 
     if (inflight.get(key) === entry) inflight.delete(key);
   }
 }
-async function readExplicitAccountQuota(provider: string, accountId: string, configured?: OcxProviderConfig): Promise<{
+function readExplicitAccountQuota(provider: string, accountId: string, configured?: OcxProviderConfig): ReturnType<typeof readExplicitAccountQuotaUnscoped> {
+  return withAccountEgress({account:{kind:"oauth",provider,id:accountId},purpose:"quota"},()=>readExplicitAccountQuotaUnscoped(provider,accountId,configured));
+}
+async function readExplicitAccountQuotaUnscoped(provider: string, accountId: string, configured?: OcxProviderConfig): Promise<{
   result: ProviderQuotaProbeResult;
   identity: string | undefined;
   isCurrent: () => boolean;
@@ -544,7 +548,7 @@ export async function fetchProviderAccountQuotas(
   const set = getAccountSet(provider);
   if (!set) return [];
   return mapQuotaRoster(set.accounts, async account => {
-    const entry = await fetchAccountQuota(provider, account.id, forceRefresh, providerConfig, liveConfig);
+    const entry = await withAccountEgress({account:{kind:"oauth",provider,id:account.id},purpose:"quota"},()=>fetchAccountQuota(provider, account.id, forceRefresh, providerConfig, liveConfig));
     const { projectAccountQuotaRow } = await import("./quota/account-row");
     return projectAccountQuotaRow(provider, account.id, entry, providerConfig);
   });

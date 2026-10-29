@@ -1,3 +1,4 @@
+import { proxyManagerCopy } from "./proxy-manager-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 import type { TKey } from "./en";
 
@@ -5,6 +6,7 @@ import type { TKey } from "./en";
  * Korean i18n catalog; must match the `TKey` set (compile-checked).
  */
 export const ko: Record<TKey, string> = {
+  ...proxyManagerCopy.en,
   "pws.completion.title": "모델 응답 테스트",
   "pws.completion.model": "테스트할 모델",
   "pws.completion.choose": "모델 선택",
@@ -690,6 +692,7 @@ export const ko: Record<TKey, string> = {
   "prov.dontOpenBrowserHint": "다른 브라우저 프로필로 로그인하거나, 대시보드를 프록시와 다른 컴퓨터에서 쓸 때 유용합니다.",
   "prov.linkCopied": "복사됨",
   "prov.linkCopyUnavailable": "클립보드를 사용할 수 없음",
+  "prov.linkManualCopy": "자동 복사가 차단되었습니다. 아래 필드를 선택하고 Ctrl+C(Mac은 ⌘C)를 누르거나 길게 눌러 복사하세요.",
   "prov.deviceCode": "기기 인증 코드",
   "prov.copyCode": "코드 복사",
   "prov.copyCodeAndOpen": "코드 복사 후 열기",

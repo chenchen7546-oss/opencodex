@@ -1,3 +1,5 @@
+import { hasExplicitAccountEgress } from "../../lib/account-egress";
+import { fetch as accountFetch } from "../../lib/account-fetch";
 import { CursorForegroundShellOwner } from "./native-foreground-shell";
 import http2 from "node:http2";
 import { create, fromBinary, toBinary } from "@bufbuild/protobuf";
@@ -1132,7 +1134,7 @@ class LiveCursorTransport implements CursorTransport {
     this.firstFrameAt = undefined;
     this.firstFrameLogged = false;
     const baseUrl = this.input.provider.baseUrl || "https://api2.cursor.sh";
-    const useHttp1 = isPinnedHttp1(this.input.provider.upstreamHttpVersion);
+    const useHttp1 = isPinnedHttp1(this.input.provider.upstreamHttpVersion) || hasExplicitAccountEgress(baseUrl,{headers:{authorization:`Bearer ${this.token}`}});
     const requestId = crypto.randomUUID();
     const dialHost = cursorHostLabel(baseUrl);
     debugProviderDiagnostic("cursor", "dial", { host: dialHost, transport: useHttp1 ? "http1.1" : "http2" });
@@ -1501,7 +1503,7 @@ class LiveCursorTransport implements CursorTransport {
           onEnd: onStreamEnd,
           onError: onStreamError,
         },
-        ...(providerFetch ? { fetch: providerFetch } : {}),
+        fetch: providerFetch ?? accountFetch,
       });
       this.http1Connection.start();
     } else {

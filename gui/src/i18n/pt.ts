@@ -1,3 +1,4 @@
+import { proxyManagerCopy } from "./proxy-manager-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 // Brazilian Portuguese — generated from en.ts. Must match TKey set (compile-checked).
 import type { TKey } from "./en";
@@ -7,6 +8,7 @@ import type { TKey } from "./en";
  * Technical terms and model identifiers intentionally remain English.
  */
 export const pt: Record<TKey, string> = {
+  ...proxyManagerCopy.en,
   "pws.completion.title": "Teste de resposta do modelo",
   "pws.completion.model": "Modelo a testar",
   "pws.completion.choose": "Escolha um modelo",
@@ -705,6 +707,7 @@ export const pt: Record<TKey, string> = {
   "prov.dontOpenBrowserHint": "Útil para usar outro perfil de navegador ou quando o painel não está na máquina do proxy.",
   "prov.linkCopied": "Copiado",
   "prov.linkCopyUnavailable": "Área de transferência indisponível",
+  "prov.linkManualCopy": "A cópia automática foi bloqueada. Selecione o campo abaixo e pressione Ctrl+C (⌘C no Mac), ou mantenha pressionado para copiar.",
   "prov.deviceCode": "Código do dispositivo",
   "prov.copyCode": "Copiar código",
   "prov.copyCodeAndOpen": "Copiar código e abrir",

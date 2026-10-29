@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactElement } from "rea
 import { useKeyedClientResource } from "./client-resource";
 import Dashboard from "./pages/Dashboard";
 import Providers from "./pages/Providers";
+import ProxyManager from "./pages/ProxyManager";
 import Models from "./pages/Models";
 import Advisor from "./pages/Advisor";
 import Subagents from "./pages/Subagents";
@@ -47,6 +48,7 @@ const PAGE_TKEY: Record<Page, TKey> = {
   dashboard: "nav.dashboard",
   startup: "nav.startup",
   providers: "nav.providers",
+  "proxy-manager": "pm.title",
   models: "nav.models",
   subagents: "nav.subagents",
   advisor: "nav.advisor",
@@ -627,6 +629,7 @@ export default function App() {
                   authenticationPending={targets.connected && !sharedSessionReady} refreshEpoch={sharedSessionEpoch} />}
                 {page === "startup" && <Startup apiBase={sharedBase} machineApiBase={machineBase} connected={targets.connected} />}
                 {page === "providers" && <Providers apiBase={sharedBase} />}
+                {page === "proxy-manager" && <ProxyManager key={sharedBase} apiBase={sharedBase} />}
                 {page === "models" && <Models key={sharedBase} apiBase={sharedBase} restartEpoch={codexRestartEpoch} connected={targets.connected} catalogSyncedAt={targets.catalogSyncedAt} reportRestart={report} />}
                 {page === "subagents" && <Subagents key={sharedBase} apiBase={sharedBase} />}
                 {page === "advisor" && <Advisor key={sharedBase} apiBase={sharedBase} />}

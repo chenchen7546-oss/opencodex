@@ -1,3 +1,4 @@
+import { proxyManagerCopy } from "./proxy-manager-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 // Vietnamese — generated from en.ts. Must match TKey set (compile-checked).
 import type { TKey } from "./en";
@@ -7,6 +8,7 @@ import type { TKey } from "./en";
  * Technical terms and model identifiers intentionally remain English.
  */
 export const vi: Record<TKey, string> = {
+  ...proxyManagerCopy.en,
   "pws.completion.title": "Kiểm tra phản hồi mô hình",
   "pws.completion.model": "Mô hình cần kiểm tra",
   "pws.completion.choose": "Chọn mô hình",
@@ -691,6 +693,7 @@ export const vi: Record<TKey, string> = {
   "prov.dontOpenBrowserHint": "Hữu ích đối với profile trình duyệt khác, hoặc khi bảng điều khiển (dashboard) không nằm trên máy cài proxy.",
   "prov.linkCopied": "Đã sao chép",
   "prov.linkCopyUnavailable": "Clipboard không khả dụng",
+  "prov.linkManualCopy": "Tính năng sao chép tự động bị chặn. Chọn ô bên dưới rồi nhấn Ctrl+C (⌘C trên Mac), hoặc nhấn giữ để sao chép.",
   "prov.deviceCode": "Mã thiết bị",
   "prov.copyCode": "Sao chép mã",
   "prov.copyCodeAndOpen": "Sao chép mã và mở",

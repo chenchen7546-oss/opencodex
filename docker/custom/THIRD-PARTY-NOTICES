@@ -1,0 +1,7 @@
+This custom image includes Mihomo v1.19.33, licensed under GPL-3.0.
+The original license is included as MIHOMO-LICENSE in this directory.
+Upstream source for this exact release:
+https://github.com/MetaCubeX/mihomo/tree/v1.19.33
+Source archive:
+https://github.com/MetaCubeX/mihomo/archive/refs/tags/v1.19.33.tar.gz
+Binary checksums and architecture selection: docker/custom/mihomo-release.json.

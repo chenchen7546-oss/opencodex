@@ -1,3 +1,4 @@
+import { fetch } from "../lib/account-fetch";
 import type { OAuthController, OAuthCredentials } from "./types";
 import { homedir } from "node:os";
 import { join } from "node:path";

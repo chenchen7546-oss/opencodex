@@ -1,3 +1,5 @@
+import { fetch } from "../lib/account-fetch";
+import { accountEgressInit } from "../lib/account-egress";
 import { publishCredentialSync } from "../local-credentials/generation";
 import { classifyChatgptRefreshFailure, noteChatgptRefreshFailure, type ChatgptRefreshDiagnosticCode } from "./chatgpt-refresh-failure";
 import { readBoundedResponseBody } from "../lib/bounded-body";
@@ -1396,6 +1398,7 @@ async function resolveCodexToken(
       };
     }
     const res = await fetch(CHATGPT_TOKEN_URL, {
+      ...accountEgressInit({account:{kind:"codex",provider:"openai",id},purpose:"refresh"}),
       method: "POST",
       headers: {
         "Content-Type": "application/json",

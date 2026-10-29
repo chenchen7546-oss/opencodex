@@ -1,3 +1,5 @@
+import { fetch } from "../../lib/account-fetch";
+import { accountEgressInit, withAccountEgress } from "../../lib/account-egress";
 import { withCodexAccountLogLabel } from "../account-label";
 import { getCodexAccountCredential, markCodexAccountValidated, readCodexAccountRecord, saveCodexAccountCredential, CodexCredentialRefreshLockTimeoutError, CodexCredentialRefreshBusyError, CodexCredentialRefreshStaleError } from "../account-store";
 import { clearAccountQuota, isCodexQuotaExhausted, isValidWhamHistoryObservation, parseUsageQuota, setAccountQuotaFromParsed } from "../quota";
@@ -214,10 +216,10 @@ export async function handleCodexAuthLoginStart(req: Request, config: OcxConfig,
   codexAuthLoginState.set(flowId, loginOwner);
   try {
     const { startLoginFlow, getLoginStatus, publicOAuthAuthenticationErrorMessage } = await import("../../oauth");
-    const result = await startLoginFlow("chatgpt", {
+    const result = await withAccountEgress({provider:"openai",purpose:"login",...(reauth?{account:{kind:"codex",provider:"openai",id:accountId} as const}:{})},()=>startLoginFlow("chatgpt", {
       forceLogin: true,
       ...(useDeviceFlow ? { flow: "device" as const } : {}),
-    }, { flowId });
+    }, { flowId }));
 
     // Open the browser server-side (same pattern as /api/oauth/login in management-api.ts).
     // The GUI's window.open is popup-blocked because it runs after an await, not a direct click.
@@ -270,6 +272,7 @@ export async function handleCodexAuthLoginStart(req: Request, config: OcxConfig,
               try {
                 const tokens = { access_token: cred.access, account_id: oauthAccountId };
                 const resp = await fetch("https://chatgpt.com/backend-api/wham/usage", {
+                  ...accountEgressInit({provider:"openai",purpose:"quota",...(reauth?{account:{kind:"codex",provider:"openai",id:accountId} as const}:{})}),
                   headers: { Authorization: `Bearer ${tokens.access_token}`, "ChatGPT-Account-Id": tokens.account_id },
                   signal: AbortSignal.timeout(8000),
                 });

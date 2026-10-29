@@ -1,4 +1,6 @@
 import { getConfigDir } from "../config/paths";
+import { fetch } from "../lib/account-fetch";
+import { accountEgressInit } from "../lib/account-egress";
 import { parseRetryAfterMs } from "./routing/cooldown-math";
 
 const BASE_DELAY_MS = 5 * 60_000;
@@ -66,6 +68,7 @@ export async function fetchCodexUsage<T>(
   onDispatch?: () => void,
   schedule: CodexUsageSchedule = {},
 ): Promise<CodexUsageRead<T> | null> {
+  init = { ...init,...accountEgressInit({ account:{kind:"codex",provider:"openai",id:schedule.poolAccountId ?? "__main__"},purpose:"quota" }) };
   if (schedule.unpaced) {
     onDispatch?.();
     const response = await fetch("https://chatgpt.com/backend-api/wham/usage", init);

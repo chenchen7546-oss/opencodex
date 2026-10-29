@@ -157,7 +157,7 @@ bun run build
 
 ## Container deployment recipe
 
-The repository ships a root multi-stage `Dockerfile`, `compose.yaml`, narrow `.dockerignore`, and
+The custom branch extends this recipe separately; see [custom container delivery](../account-proxy-management.md#custom-container-delivery). The repository ships a root multi-stage `Dockerfile`, `compose.yaml`, narrow `.dockerignore`, and
 container bootstrap helper, but still publishes no registry image. The source build pins the Bun
 base by multi-platform digest, runs non-root with a read-only root filesystem and dropped
 capabilities, publishes the data port on host loopback by default (remote binding is an explicit

@@ -1,3 +1,4 @@
+import { fetch } from "../lib/account-fetch";
 /** Kimi Code OAuth flow (device authorization grant). Ported from jawcode oauth/kimi.ts. */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import * as os from "node:os";

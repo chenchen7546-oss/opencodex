@@ -1,3 +1,4 @@
+import { withAccountEgress } from "../lib/account-egress";
 /** Isolated, process-local API-key quota rows. Never publishes provider/routing caches. */
 import { createHash } from "node:crypto";
 import type { OcxConfig, OcxProviderConfig } from "../types";
@@ -178,7 +179,7 @@ export async function readProviderApiKeyQuotas(
       ? await readEntry(key, force, isCurrent, () => {
           const isolatedProvider = { ...providerSnapshot, apiKey: resolved, apiKeyPool: undefined };
           const isolatedConfig = { ...config, providers: { [name]: isolatedProvider } };
-          return probe(isolatedProvider, isolatedConfig);
+          return withAccountEgress({account:{kind:"key",provider:name,id:row.id},purpose:"quota"},()=>probe(isolatedProvider, isolatedConfig));
         })
       : { ts: Date.now(), quota: null, unavailable: true as const };
     const result = {

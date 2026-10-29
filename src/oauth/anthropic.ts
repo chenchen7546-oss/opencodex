@@ -1,3 +1,4 @@
+import { fetch } from "../lib/account-fetch";
 /** Anthropic OAuth flow (Claude Pro/Max). Ported from jawcode oauth/anthropic.ts. */
 import { OAuthCallbackFlow } from "./callback-server";
 import { bindAnthropicIdentity, normalizeAnthropicIdentity, resolveAnthropicAccountIdentity } from "./anthropic-identity";

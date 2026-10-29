@@ -1,3 +1,4 @@
+import { fetch } from "../../lib/account-fetch";
 /**
  * Devin (Cognition) account quota from `SeatManagementService/GetUserStatus`.
  *

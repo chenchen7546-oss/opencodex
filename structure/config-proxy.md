@@ -1,5 +1,7 @@
 # Proxy Configuration
 
+Managed account bindings precede provider/global routes; see the [account proxy contract](account-proxy-management.md#identity-and-route-selection). Global environment activation is unchanged.
+
 `src/config/proxy-env.ts` remains the single application owner for global proxy
 configuration. An explicit SOCKS5 or SOCKS5h URL selects ALL_PROXY and removes
 stale scheme-proxy variables; HTTP(S) settings retain their existing environment

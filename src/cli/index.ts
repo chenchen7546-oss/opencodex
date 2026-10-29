@@ -238,6 +238,7 @@ if (process.argv[2] === "__codebuddy-mcp" || process.argv[2] === "__qoder-mcp") 
 const head = await runCli(process.argv.slice(2));
 const args = head.args;
 const command = head.command;
+if (["start","account","login","quota","provider","models"].includes(command ?? "")) (await import("../proxy-manager/runtime")).configureAccountProxies(loadConfig());
 
 function parseStartCliOptions(): ReturnType<typeof parseStartOptions> {
   try {

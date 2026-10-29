@@ -1,4 +1,6 @@
 import { publishCredentialSync } from "../local-credentials/generation";
+import { fetch } from "../lib/account-fetch";
+import { accountEgressInit } from "../lib/account-egress";
 import { captureMainAccountIdentityGeneration, getMainQuotaCredentialGeneration, isMainAccountIdentityGenerationLive, isMainQuotaWriterLive, matchesMainQuotaCredential, observeMainDecisionCredentialUsable, type MainQuotaWriter } from "./main-account-cache";
 import { classifyChatgptRefreshFailure, noteChatgptRefreshFailure } from "./chatgpt-refresh-failure";
 import { readBoundedResponseBody } from "../lib/bounded-body";
@@ -139,6 +141,7 @@ async function refreshNativeMainGrant(
   options: { signal: AbortSignal },
 ): Promise<OAuthCredentials> {
   const resp = await fetch(CHATGPT_TOKEN_URL, {
+    ...accountEgressInit({account:{kind:"codex",provider:"openai",id:MAIN_CODEX_ACCOUNT_ID},purpose:"refresh"}),
     method: "POST",
     headers: {
       "Content-Type": "application/json",

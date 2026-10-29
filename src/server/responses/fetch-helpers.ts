@@ -1,4 +1,6 @@
 import type { NativeResponseControl } from "./native-response-control";
+import { ACCOUNT_EGRESS_SCOPE, currentAccountEgress, accountEgressInit, hasExplicitAccountEgress, sendWithAccountEgress } from "../../lib/account-egress";
+import { isEgressTransparentExecutor } from "../../lib/provider-egress";
 import { PROVIDER_HEADER_DEADLINE as HEADER_DEADLINE, type ProviderHeaderDeadline as HeaderDeadline } from "../../lib/provider-admission-wait";
 import type { CodexWsPreOutputRefusalHold } from "./codex-ws-wire";
 import type { Server } from "bun";
@@ -209,6 +211,7 @@ export function sendWithConnectionPolicy(
   // the reselected provider and the rebuilt destination, so it decides and marks the init; the
   // inner pass honours that mark rather than recomputing from a stale closure.
   const alreadyDecided = (init as Record<symbol, unknown> | undefined)?.[EGRESS_DECIDED] === true;
+  if (redirectedToLoopback && hasExplicitAccountEgress(input,{...init,headers},egress?.providerName)) throw new Error("account_proxy_loopback_rewrite_unsupported");
   const decide = egress !== undefined && !alreadyDecided && !redirectedToLoopback;
   const egressInit = redirectedToLoopback
     ? { proxy: false as const }
@@ -234,8 +237,12 @@ export function sendWithConnectionPolicy(
   // Final headers, after plugin rewrites: an upstream can only echo what it received here, so the
   // request log refuses any diagnostic that repeats one of these values (see request-log-terminal-status).
   outboundCredentials().remember(headers);
-  return physicalFetch(input, {
+  if (hasExplicitAccountEgress(input, { ...init, headers }, egress?.providerName) && !isEgressTransparentExecutor(physicalFetch)) {
+    throw new Error("account_proxy_transport_unsupported");
+  }
+  return sendWithAccountEgress(input, {
     ...init,
+    ...accountEgressInit({ ...currentAccountEgress(), ...(init as Record<symbol,object> | undefined)?.[ACCOUNT_EGRESS_SCOPE], provider: egress?.providerName, purpose: "model" }),
     ...(compressed ? { body: compressed.body } : largeCodexBody ? { body: Buffer.from(body, "utf8") } : {}),
     headers,
     redirect: "manual",
@@ -243,7 +250,7 @@ export function sendWithConnectionPolicy(
     ...egressInit,
     ...(decide || redirectedToLoopback ? { [EGRESS_DECIDED]: true } : {}),
     ...{ [UPSTREAM_REWRITTEN]: true },
-  });
+  }, (target, options) => physicalFetch(target, options));
 }
 
 interface CodexWsExecutor { provider: OcxProviderConfig; http: typeof globalThis.fetch }
@@ -396,7 +403,7 @@ export function providerFetch(
         return httpFetch(input, init, reacquirePacing);
       }
       const egress = egressFor(input);
-      if (providerEgressIsExplicit(egress)) {
+      if (providerEgressIsExplicit(egress) || hasExplicitAccountEgress(input, init, providerName)) {
         warnEgressWebsocketDowngradeOnce(providerName, describeProviderEgressForLog(egress));
         return httpFetch(input, init, reacquirePacing);
       }

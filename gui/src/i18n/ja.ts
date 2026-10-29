@@ -1,3 +1,4 @@
+import { proxyManagerCopy } from "./proxy-manager-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 import type { TKey } from "./en";
 
@@ -5,6 +6,7 @@ import type { TKey } from "./en";
  * Japanese i18n catalog; must match the `TKey` set (compile-checked).
  */
 export const ja: Record<TKey, string> = {
+  ...proxyManagerCopy.en,
   "pws.completion.title": "モデル応答テスト",
   "pws.completion.model": "テストするモデル",
   "pws.completion.choose": "モデルを選択",
@@ -692,6 +694,7 @@ export const ja: Record<TKey, string> = {
   "prov.dontOpenBrowserHint": "別のブラウザープロファイルでログインする場合や、ダッシュボードがプロキシと別のマシンにある場合に使います。",
   "prov.linkCopied": "コピーしました",
   "prov.linkCopyUnavailable": "クリップボードを使用できません",
+  "prov.linkManualCopy": "自動コピーがブロックされました。下の欄を選択して Ctrl+C（Mac は ⌘C）を押すか、長押ししてコピーしてください。",
   "prov.deviceCode": "デバイスコード",
   "prov.copyCode": "コードをコピー",
   "prov.copyCodeAndOpen": "コードをコピーして開く",

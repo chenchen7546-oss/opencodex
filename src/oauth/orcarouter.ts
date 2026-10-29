@@ -1,3 +1,4 @@
+import { fetch } from "../lib/account-fetch";
 /** OrcaRouter browser authorization: OAuth-style consent + PKCE, yielding a durable API key. */
 import { OAuthCallbackFlow, type OAuthCallbackFlowOptions } from "./callback-server";
 import { generatePKCE } from "./pkce";

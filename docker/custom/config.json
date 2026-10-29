@@ -1,0 +1,17 @@
+{
+  "port": 10100,
+  "runtimeRole": "hub",
+  "hostname": "0.0.0.0",
+  "providers": {
+    "openai": {
+      "adapter": "openai-responses",
+      "baseUrl": "https://chatgpt.com/backend-api/codex",
+      "authMode": "forward",
+      "codexAccountMode": "pool",
+      "requestPacing": { "enabled": true, "maxConcurrentRequests": 1 }
+    }
+  },
+  "defaultProvider": "openai",
+  "codexAutoStart": false,
+  "codexShimAutoRestore": false
+}

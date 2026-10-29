@@ -1,3 +1,4 @@
+import { fetch } from "../../lib/account-fetch";
 /**
  * Exchange a Firebase ID token for a long-lived Cognition/Devin API key.
  *

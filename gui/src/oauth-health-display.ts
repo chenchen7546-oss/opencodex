@@ -135,38 +135,7 @@ export function formatOAuthHealthSummary(
  * (`hostname: 0.0.0.0` over plain HTTP) serves. Without the fallback, copying
  * would be permanently unavailable on that deployment.
  */
-export async function copyTextToClipboard(text: string): Promise<boolean> {
-  const write = navigator.clipboard?.writeText?.bind(navigator.clipboard);
-  if (write) {
-    try {
-      await write(text);
-      return true;
-    } catch {
-      // Permission denied or a non-secure context: fall through to the legacy path.
-    }
-  }
-  return copyViaExecCommand(text);
-}
-
-function copyViaExecCommand(text: string): boolean {
-  if (typeof document === "undefined" || typeof document.execCommand !== "function") return false;
-  const area = document.createElement("textarea");
-  area.value = text;
-  area.setAttribute("readonly", "");
-  area.setAttribute("aria-hidden", "true");
-  area.style.position = "fixed";
-  area.style.top = "0";
-  area.style.opacity = "0";
-  document.body.appendChild(area);
-  try {
-    area.select();
-    return document.execCommand("copy");
-  } catch {
-    return false;
-  } finally {
-    area.remove();
-  }
-}
+export { copyTextToClipboard } from "./lib/clipboard";
 
 /** Scope resolution moved to useCopyFeedback; this only maps an outcome to copy. */
 export function doctorCopyButtonLabel(

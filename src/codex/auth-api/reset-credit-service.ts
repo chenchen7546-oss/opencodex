@@ -1,3 +1,4 @@
+import { fetch } from "../../lib/account-fetch";
 import { codexAccountUsesCreditsAfterLimit } from "../account-credit-use";
 import { getValidCodexToken, isCodexAccountGenerationLive, readCodexAccountRecord, CodexCredentialGenerationConflictError } from "../account-store";
 import { isCompleteCodexQuotaRecoverySnapshot } from "../quota";

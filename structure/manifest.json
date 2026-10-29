@@ -530,9 +530,7 @@
       "tier": 4,
       "title": "Anthropic Account Thresholds",
       "scope": "Account-owned usage thresholds, inheritance, routing boundaries and durable policy changes.",
-      "documents": [
-        "src/oauth/"
-      ]
+      "documents": ["src/oauth/"]
     },
     {
       "path": "providers/meta-muse.md",
@@ -553,7 +551,9 @@
       "tier": 4,
       "title": "Antigravity Account Import",
       "scope": "Cockpit Tools import schema, identity check, probe-gated project_id fallback and no-write failure paths.",
-      "documents": ["src/oauth/"]
+      "documents": [
+        "src/oauth/"
+      ]
     },
     {
       "path": "providers/claude-cli-replay.md",
@@ -1121,9 +1121,9 @@
       "documents": [
         "src/update/supervised-recovery.mjs",
         "src/update/mutation-guard.mjs",
-          "src/update/guarded-runtime-ops.ts",
-          "src/update/guarded-port-reclaim.ts",
-          "src/update/guarded-tray-ops.ts",
+        "src/update/guarded-runtime-ops.ts",
+        "src/update/guarded-port-reclaim.ts",
+        "src/update/guarded-tray-ops.ts",
         "src/update/job-pinned-start.ts",
         "src/update/job-supervised-restart.ts",
         "src/update/job.ts"
@@ -1260,6 +1260,15 @@
         "src/oauth/api-key-pool-preserve.ts",
         "gui/src/account-pause-display.ts"
       ]
+    },
+    {
+      "path": "account-proxy-management.md",
+      "tier": 2,
+      "title": "Account Proxy Management",
+      "scope": "Independent account egress, managed proxy profiles, optional core, subscriptions and bounded traffic accounting.",
+      "documents": [
+        "src/proxy-manager/"
+      ]
     }
   ],
   "contracts": {
@@ -1329,6 +1338,20 @@
           "subagents.md",
           "transports/inventory.md",
           "transports/streaming-health.md"
+        ]
+      },
+      {
+        "id": "account-proxy-egress",
+        "owner": {
+          "document": "account-proxy-management.md",
+          "anchor": "identity-and-route-selection"
+        },
+        "dependents": [
+          "config-proxy.md",
+          "config.md",
+          "gui-and-management-api.md",
+          "providers/cursor.md",
+          "transports/inventory.md"
         ]
       }
     ]

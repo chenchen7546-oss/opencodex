@@ -1,3 +1,4 @@
+import { proxyManagerCopy } from "./proxy-manager-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 import type { TKey } from "./en";
 
@@ -5,6 +6,7 @@ import type { TKey } from "./en";
  * Chinese i18n catalog; must match the `TKey` set (compile-checked).
  */
 export const zh: Record<TKey, string> = {
+  ...proxyManagerCopy.zh,
   "pws.completion.title": "模型响应测试",
   "pws.completion.model": "要测试的模型",
   "pws.completion.choose": "选择模型",
@@ -687,6 +689,7 @@ export const zh: Record<TKey, string> = {
   "prov.dontOpenBrowserHint": "适用于使用其他浏览器配置文件登录，或仪表板与代理不在同一台机器上。",
   "prov.linkCopied": "已复制",
   "prov.linkCopyUnavailable": "剪贴板不可用",
+  "prov.linkManualCopy": "自动复制被浏览器阻止。点击下方文本框全选，按 Ctrl+C（Mac 使用 ⌘C），或长按复制。",
   "prov.deviceCode": "设备验证码",
   "prov.copyCode": "复制验证码",
   "prov.copyCodeAndOpen": "复制验证码并打开",

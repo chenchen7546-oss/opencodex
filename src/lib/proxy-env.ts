@@ -1,4 +1,5 @@
 import { socks5Fetch } from "./socks5-fetch";
+import { sendWithAccountEgress } from "./account-egress";
 
 export const OUTBOUND_PROXY_ENV_KEYS = ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY"] as const;
 export const PROXY_ENV_KEYS = [...OUTBOUND_PROXY_ENV_KEYS, "NO_PROXY"] as const;
@@ -201,7 +202,11 @@ export function socks5ProxyFromEnv(env: ProxyEnvMap = process.env): string | und
  */
 export type ProxyCapableRequestInit = RequestInit & { proxy?: string | false };
 
-export function configuredOutboundFetch(
+export function configuredOutboundFetch(input: RequestInfo | URL, init?: RequestInit, fallback?: typeof globalThis.fetch): Promise<Response> {
+  return sendWithAccountEgress(input,init,(target,options) => unmanagedOutboundFetch(target,options,fallback));
+}
+
+function unmanagedOutboundFetch(
   input: RequestInfo | URL,
   init?: RequestInit,
   fallback?: typeof globalThis.fetch,

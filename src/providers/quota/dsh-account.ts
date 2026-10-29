@@ -1,3 +1,5 @@
+import { fetch } from "../../lib/account-fetch";
+import { accountEgressInit } from "../../lib/account-egress";
 import { DSH_PLATFORM_ORIGIN } from "../../oauth/dsh";
 import { asRecord, QUOTA_JSON_READ_FAILURE, readQuotaJson, REQUEST_TIMEOUT_MS } from "../quota-wire";
 import { AUTHORITATIVE_EMPTY_QUOTA, TERMINAL_QUOTA_FAILURE, type ProviderQuotaProbeResult } from "./report-cache";
@@ -19,6 +21,7 @@ export async function fetchDshAccountQuota(
 
   try {
     const response = await fetch(`${DSH_PLATFORM_ORIGIN}/api/v0/users/get_user_summary`, {
+      ...accountEgressInit({provider,purpose:"quota",...(owner?{account:{kind:"oauth",provider,id:owner.accountId}}:{})}),
       method: "GET",
       headers: {
         "x-dsh-auth-token": accessToken.trim(),

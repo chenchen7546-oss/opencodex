@@ -1,4 +1,5 @@
 import { remoteWorkspaceEnabled } from "../remote-control/workspace-activation";
+import { configureAccountProxies } from "../proxy-manager/runtime";
 import { scheduleDesktopCompatibilityStartup } from "./index/desktop-compatibility-startup";
 import { AuxiliaryListenerBindError } from "./ports";
 import { normalizeBindHostname } from "./bind-host";
@@ -232,7 +233,7 @@ function startServerWithSpendLedgerOwner(port: number | undefined, deps: StartSe
   warnPlaintextV2AgentMessagesStartup(config);
   warnAgentTaskRecoveryStartup(config);
   setLiveStateStoreConfig(config);
-  applyProxyEnv(config, true);
+  applyProxyEnv(config, true); configureAccountProxies(config);
   assertServerAuthConfig(config);
   const managementAuth = deps.managementAuthState ?? initializeManagementAuthState(config);
   const managementSessionControl = createManagementSessionControl(managementAuth);

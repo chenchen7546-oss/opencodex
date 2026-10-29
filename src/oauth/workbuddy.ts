@@ -1,3 +1,4 @@
+import { fetch } from "../lib/account-fetch";
 import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { readBoundedResponseBody } from "../lib/bounded-body";

@@ -38,6 +38,7 @@ Persisted config, the Codex home it writes into, and the model catalog it publis
 | [`advisor.md`](advisor.md) | The optional expert consultation sidecar: manual/preflight/adaptive policies, evidence, durable task allowance, metadata activity, and loopback routing. |
 | [`config-proxy.md`](config-proxy.md) | Global proxy activation, start flags, and credential-safe CLI output. |
 | [`account-auto-pause.md`](account-auto-pause.md) | Opt-in permanent account refusal classification, credential fences, durable pause metadata, bounded recovery and resume. |
+| [`account-proxy-management.md`](account-proxy-management.md) | Independent account egress, managed proxy profiles, optional core, subscriptions and bounded traffic accounting. |
 
 ### Tier 3 — Data planes and transports
 
@@ -347,6 +348,7 @@ A source area can be described by more than one doc, because these docs are orga
 | `src/providers/workbuddy-credit-balance.ts` | [`providers/workbuddy.md`](providers/workbuddy.md) |
 | `src/providers/workbuddy-models.ts` | [`providers/workbuddy.md`](providers/workbuddy.md) |
 | `src/providers/workbuddy.ts` | [`providers/workbuddy.md`](providers/workbuddy.md) |
+| `src/proxy-manager/` | [`account-proxy-management.md`](account-proxy-management.md) |
 | `src/quota-pool/` | [`quota-pool.md`](quota-pool.md) |
 | `src/quota/` | [`dashboard-and-usage.md`](dashboard-and-usage.md) |
 | `src/reasoning-effort.ts` | [`runtime.md`](runtime.md) |
@@ -447,6 +449,7 @@ Source review remains defined by the source-to-doc map above. This registry name
 
 | Contract | Authority | Review dependents |
 | --- | --- | --- |
+| `account-proxy-egress` | [`account-proxy-management.md#identity-and-route-selection`](account-proxy-management.md#identity-and-route-selection) | [`config-proxy.md`](config-proxy.md)<br>[`config.md`](config.md)<br>[`gui-and-management-api.md`](gui-and-management-api.md)<br>[`providers/cursor.md`](providers/cursor.md)<br>[`transports/inventory.md`](transports/inventory.md) |
 | `paginated-history-writer` | [`codex-home.md#paginated-history-writer-boundary`](codex-home.md#paginated-history-writer-boundary) | [`catalog.md`](catalog.md)<br>[`config.md`](config.md)<br>[`dashboard-and-usage.md`](dashboard-and-usage.md)<br>[`ops/docs-and-release.md`](ops/docs-and-release.md)<br>[`providers/openai-accounts.md`](providers/openai-accounts.md)<br>[`runtime.md`](runtime.md)<br>[`subagents.md`](subagents.md) |
 | `request-copy-accounting` | [`transports/byte-accounting.md#request-copy-accounting`](transports/byte-accounting.md#request-copy-accounting) | [`adapters/registry.md`](adapters/registry.md)<br>[`catalog.md`](catalog.md)<br>[`clients/claude-desktop.md`](clients/claude-desktop.md)<br>[`clients/integrations.md`](clients/integrations.md)<br>[`data-planes/images.md`](data-planes/images.md)<br>[`data-planes/inbound-compat.md`](data-planes/inbound-compat.md)<br>[`ops/docs-and-release.md`](ops/docs-and-release.md)<br>[`ops/service-and-sidecars.md`](ops/service-and-sidecars.md)<br>[`overview.md`](overview.md)<br>[`providers/chat-compat.md`](providers/chat-compat.md)<br>[`providers/cursor.md`](providers/cursor.md)<br>[`providers/xai-grok.md`](providers/xai-grok.md)<br>[`runtime.md`](runtime.md)<br>[`subagents.md`](subagents.md)<br>[`transports/inventory.md`](transports/inventory.md)<br>[`transports/streaming-health.md`](transports/streaming-health.md) |
 | `stream-buffer-accounting` | [`transports/byte-accounting.md#stream-buffer-accounting`](transports/byte-accounting.md#stream-buffer-accounting) | [`adapters/registry.md`](adapters/registry.md)<br>[`catalog.md`](catalog.md)<br>[`clients/claude-desktop.md`](clients/claude-desktop.md)<br>[`clients/integrations.md`](clients/integrations.md)<br>[`data-planes/images.md`](data-planes/images.md)<br>[`data-planes/inbound-compat.md`](data-planes/inbound-compat.md)<br>[`ops/docs-and-release.md`](ops/docs-and-release.md)<br>[`ops/service-and-sidecars.md`](ops/service-and-sidecars.md)<br>[`overview.md`](overview.md)<br>[`providers/chat-compat.md`](providers/chat-compat.md)<br>[`providers/cursor.md`](providers/cursor.md)<br>[`providers/xai-grok.md`](providers/xai-grok.md)<br>[`runtime.md`](runtime.md)<br>[`subagents.md`](subagents.md)<br>[`transports/inventory.md`](transports/inventory.md)<br>[`transports/streaming-health.md`](transports/streaming-health.md) |

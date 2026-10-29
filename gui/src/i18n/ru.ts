@@ -1,3 +1,4 @@
+import { proxyManagerCopy } from "./proxy-manager-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 import type { TKey } from "./en";
 
@@ -5,6 +6,7 @@ import type { TKey } from "./en";
  * Russian i18n catalog; must match the `TKey` set (compile-checked).
  */
 export const ru: Record<TKey, string> = {
+  ...proxyManagerCopy.en,
   "pws.completion.title": "Проверка ответа модели",
   "pws.completion.model": "Модель для проверки",
   "pws.completion.choose": "Выберите модель",
@@ -692,6 +694,7 @@ export const ru: Record<TKey, string> = {
   "prov.dontOpenBrowserHint": "Полезно для другого профиля браузера или когда панель управления не на машине с прокси.",
   "prov.linkCopied": "Скопировано",
   "prov.linkCopyUnavailable": "Буфер обмена недоступен",
+  "prov.linkManualCopy": "Автоматическое копирование заблокировано. Выберите поле ниже и нажмите Ctrl+C (⌘C на Mac) или удерживайте его для копирования.",
   "prov.deviceCode": "Код устройства",
   "prov.copyCode": "Копировать код",
   "prov.copyCodeAndOpen": "Скопировать код и открыть",

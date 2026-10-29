@@ -1,0 +1,20 @@
+# Build-only recipe. Run `build hub`, not `up`, with this file.
+# The upstream Dockerfile remains the owner of the application build.
+services:
+  base:
+    platform: ${OPENCODEX_PLATFORM:-linux/amd64}
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: runtime
+      args:
+        BUILDKIT_CONTEXT_KEEP_GIT_DIR: "1"
+  hub:
+    image: ${OPENCODEX_IMAGE:-opencodex-custom:20261029-1}
+    platform: ${OPENCODEX_PLATFORM:-linux/amd64}
+    build:
+      context: ..
+      dockerfile: docker/custom/Dockerfile
+      target: runtime
+      additional_contexts:
+        opencodex_base: service:base

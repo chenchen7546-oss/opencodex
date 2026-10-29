@@ -22,6 +22,7 @@ export type NavGroupId =
   | "connect"
   | "codex-set"
   | "providers"
+  | "proxy-manager"
   | "models"
   | "subagents"
   | "usage-logs"
@@ -40,6 +41,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
   { id: "connect", tkey: "nav.connect", Icon: IconLink, pages: ["integrations"], embedded: ["claude"] },
   { id: "codex-set", tkey: "nav.codexSet", Icon: IconCodex, pages: ["codex-set"] },
   { id: "providers", tkey: "nav.providers", Icon: IconServer, pages: ["providers"] },
+  { id: "proxy-manager", tkey: "pm.title", Icon: IconLink, pages: ["proxy-manager"] },
   { id: "models", tkey: "nav.models", Icon: IconBoxes, pages: ["models"] },
   // Advisor is another way a worker reaches a second model, so it sits beside Subagents
   // in the switcher instead of taking a sidebar row of its own.

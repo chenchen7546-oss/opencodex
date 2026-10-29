@@ -1,3 +1,4 @@
+import { proxyManagerCopy } from "./proxy-manager-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 // Turkish — generated from en.ts. Must match TKey set (compile-checked).
 import type { TKey } from "./en";
@@ -6,6 +7,7 @@ import type { TKey } from "./en";
  * Turkish i18n catalog. Must match the `TKey` set (compile-checked).
  */
 export const tr: Record<TKey, string> = {
+  ...proxyManagerCopy.en,
   "pws.completion.title": "Model yanıt testi",
   "pws.completion.model": "Test edilecek model",
   "pws.completion.choose": "Bir model seçin",
@@ -695,6 +697,7 @@ export const tr: Record<TKey, string> = {
   "prov.dontOpenBrowserHint": "Farklı bir tarayıcı profili için ya da pano proxy'nin makinesinde değilken kullanışlıdır.",
   "prov.linkCopied": "Kopyalandı",
   "prov.linkCopyUnavailable": "Pano kullanılamıyor",
+  "prov.linkManualCopy": "Otomatik kopyalama engellendi. Aşağıdaki alanı seçip Ctrl+C (Mac için ⌘C) tuşlarına basın veya kopyalamak için basılı tutun.",
   "prov.deviceCode": "Cihaz kodu",
   "prov.copyCode": "Kodu kopyala",
   "prov.copyCodeAndOpen": "Kodu kopyala ve aç",

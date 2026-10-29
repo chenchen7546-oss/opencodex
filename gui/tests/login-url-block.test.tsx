@@ -104,6 +104,11 @@ test("reports an unusable clipboard instead of a false success", async () => {
 
   expect(clipboardWrites).toEqual([]);
   expect(host.textContent).toContain("Clipboard unavailable");
+  const manual = host.querySelector("textarea");
+  expect(manual?.value).toBe(URL_A);
+  expect(manual?.readOnly).toBe(true);
+  await act(async () => { manual?.focus(); });
+  expect([manual?.selectionStart, manual?.selectionEnd]).toEqual([0, URL_A.length]);
 });
 
 test("keeps the latest feedback for its full window across repeated copies", async () => {

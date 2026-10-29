@@ -1,3 +1,5 @@
+import { hasExplicitAccountEgress } from "../../lib/account-egress";
+import { fetch as accountFetch } from "../../lib/account-fetch";
 /**
  * Live Cursor model discovery via the `GetUsableModels` Connect-unary protobuf RPC.
  * HTTP/2 remains the default; an explicit HTTP/1.1 provider pin uses Bun fetch instead.
@@ -98,7 +100,7 @@ function resolveCursorDiscoveryBaseUrl(raw: string): { ok: true; baseUrl: string
 }
 
 async function fetchCursorUsableModelsOnce(opts: CursorUsableModelsOptions): Promise<CursorUsableModelsResult> {
-  if (isPinnedHttp1(opts.upstreamHttpVersion)) return fetchCursorUsableModelsHttp1Once(opts);
+  if (isPinnedHttp1(opts.upstreamHttpVersion) || hasExplicitAccountEgress(opts.baseUrl??"https://api2.cursor.sh",{headers:cursorDiscoveryHeaders(opts)})) return fetchCursorUsableModelsHttp1Once({...opts,upstreamHttpVersion:"http1.1"});
   return fetchCursorUsableModelsHttp2Once(opts);
 }
 
@@ -166,7 +168,7 @@ async function fetchCursorUsableModelsHttp1Once(opts: CursorUsableModelsOptions)
       redirect: "manual",
       signal: controller.signal,
     }, opts.upstreamHttpVersion);
-    const response = await (opts.fetch ?? globalThis.fetch)(requestUrl, init);
+    const response = await (opts.fetch ?? accountFetch)(requestUrl, init);
     if (response.status === 401 || response.status === 403) {
       void response.body?.cancel().catch(() => undefined);
       return { ok: false, error: "auth", detail: `HTTP ${response.status}` };

@@ -1,0 +1,115 @@
+.pm-page {
+  display: grid;
+  gap: var(--space-4);
+}
+.pm-page h1,
+.pm-page h3,
+.pm-page p {
+  margin: 0;
+}
+.pm-toolbar,
+.pm-tabs,
+.pm-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.pm-toolbar > div:first-child {
+  margin-right: auto;
+}
+.pm-page .muted,
+.pm-page small {
+  color: var(--muted);
+}
+.pm-page small {
+  display: block;
+}
+.pm-search {
+  width: 100%;
+}
+.pm-editor {
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-4);
+}
+.pm-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+.pm-editor label {
+  display: grid;
+  gap: var(--space-1);
+}
+.pm-editor label.pm-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.pm-editor textarea {
+  width: 100%;
+  resize: vertical;
+}
+.pm-page input:not([type="checkbox"]),
+.pm-page select,
+.pm-page textarea {
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+}
+.pm-page input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+.pm-table {
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.pm-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-control);
+}
+.pm-table th,
+.pm-table td {
+  text-align: left;
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.pm-table th {
+  color: var(--muted);
+  font-weight: 500;
+}
+.pm-table code {
+  font-size: var(--text-caption);
+}
+.pm-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-3);
+}
+.pm-stats .panel {
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-2);
+}
+.pm-stats strong {
+  font-size: var(--text-title);
+  font-variant-numeric: tabular-nums;
+}
+.pm-page details summary {
+  cursor: pointer;
+  padding: var(--space-2) 0;
+}
+.pm-section {
+  display: grid;
+  gap: var(--space-3);
+}
+.pm-page small.pm-warning {
+  color: var(--amber);
+}

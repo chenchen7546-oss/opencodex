@@ -1,5 +1,7 @@
 # Cursor Provider
 
+A managed account proxy selects HTTP/1.1 for model discovery and live transport; see the [account proxy contract](../account-proxy-management.md#identity-and-route-selection). The unbound HTTP/2 default is unchanged.
+
 The configuration-only [plaintext V2 contract](../subagents.md#plaintext-v2-agent-messages)
 is scoped to canonical ChatGPT Responses forwarding; other source-area behavior described here is unchanged.
 

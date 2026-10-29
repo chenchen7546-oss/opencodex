@@ -1,3 +1,4 @@
+import { fetch } from "../lib/account-fetch";
 import { OAuthCallbackFlow } from "./callback-server";
 import { CHATGPT_CLIENT_ID, CHATGPT_TOKEN_URL, credsFromToken, decodeJwtPayload, extractAccountId, extractEmail } from "./chatgpt-shared";
 import type { OAuthController, OAuthCredentials } from "./types";

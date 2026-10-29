@@ -1,3 +1,4 @@
+import { proxyManagerCopy } from "./proxy-manager-copy";
 import { desktopCompatibilityCopy } from "./desktop-compatibility-copy";
 // German — generated from en.ts. Must match TKey set (compile-checked).
 import type { TKey } from "./en";
@@ -6,6 +7,7 @@ import type { TKey } from "./en";
  * German i18n catalog, generated from en.ts. Must match the `TKey` set (compile-checked).
  */
 export const de: Record<TKey, string> = {
+  ...proxyManagerCopy.en,
   "pws.completion.title": "Modellantwort testen",
   "pws.completion.model": "Zu testendes Modell",
   "pws.completion.choose": "Modell auswählen",
@@ -681,6 +683,7 @@ export const de: Record<TKey, string> = {
   "prov.dontOpenBrowserHint": "Nützlich für ein anderes Browser-Profil oder wenn das Dashboard nicht auf dem Proxy-Rechner läuft.",
   "prov.linkCopied": "Kopiert",
   "prov.linkCopyUnavailable": "Zwischenablage nicht verfügbar",
+  "prov.linkManualCopy": "Automatisches Kopieren ist blockiert. Wähle das Feld unten und drücke Strg+C (⌘C auf dem Mac), oder halte es zum Kopieren gedrückt.",
   "prov.deviceCode": "Gerätecode",
   "prov.copyCode": "Code kopieren",
   "prov.copyCodeAndOpen": "Code kopieren & öffnen",

@@ -1,3 +1,4 @@
+import { fetch } from "../../../lib/account-fetch";
 /*
  * Derived from rsvedant/opencode-windsurf-auth (src/cloud-direct/), MIT licensed,
  * Copyright (c) 2026 Vedant. The full notice is in ./index.ts.

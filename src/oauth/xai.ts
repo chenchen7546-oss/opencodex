@@ -1,3 +1,4 @@
+import { fetch } from "../lib/account-fetch";
 /** xAI OAuth flow (Grok account login). Ported from jawcode oauth/xai.ts. */
 import { abortError, sleepWithAbort } from "../lib/upstream-retry";
 import { OAuthCallbackFlow, type OAuthCallbackFlowOptions } from "./callback-server";
