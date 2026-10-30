@@ -135,7 +135,9 @@ describe("account proxy routing", () => {
     expect(JSON.stringify(store.publicProfiles())).not.toContain("password");
     expect(store.publicProfiles().find((p) => p.id === first.id)?.hasPassword).toBe(true);
   });
-  test("real HTTP proxy transport and streaming accounting without external network", async () => {
+  test.each([false, true])("real HTTP proxy and streaming accounting with environment bypass=%s", async (bypass) => {
+    const savedNoProxy = process.env.NO_PROXY;
+    if (bypass) process.env.NO_PROXY = "*";
     const proxy = Bun.serve({
       port: 0,
       hostname: "127.0.0.1",
@@ -168,6 +170,8 @@ describe("account proxy routing", () => {
       expect(rows[0]).toMatchObject({ upload: 5, download: 9, requests: 1, failures: 0, accountKey: accountKey(a) });
     } finally {
       proxy.stop(true);
+      if (savedNoProxy === undefined) delete process.env.NO_PROXY;
+      else process.env.NO_PROXY = savedNoProxy;
     }
   });
   test("errors are sanitized and failed sends contribute to the ledger", async () => {
@@ -257,7 +261,7 @@ describe("account proxy routing", () => {
     expect(pulls).toBe(1);
     expect(manager.traffic.rows("2000-01-01")[0]).toMatchObject({ download: 3, failures: 1, incomplete: 1 });
   });
-  test("a managed account keeps a WebSocket-eligible streaming request on its proxy over HTTP", async () => {
+  test("a failed managed WebSocket dial falls back over the same proxy and counts once", async () => {
     const { manager, first } = fixture();
     registerAccountEgress({
       send: (...args) => manager.send(...args),
@@ -289,7 +293,7 @@ describe("account proxy routing", () => {
       );
       const response = await send(CODEX_RESPONSES_HTTP_URL, init);
       await response.text();
-      expect(dials).toBe(0);
+      expect(dials).toBe(1);
       expect(seen).toEqual([first.url]);
       expect(manager.traffic.rows("2000-01-01")[0]?.requests).toBe(1);
     } finally {

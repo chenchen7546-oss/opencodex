@@ -3,6 +3,7 @@ import { ProxyStore } from "./store";
 import { bodyBytes, countedStream, TrafficLedger } from "./traffic";
 import { accountKey, ProxyManagerError, type ManagedAccount, type ProxyChoice } from "./types";
 import type { ManagedProxyCore } from "./core";
+import { carryProviderResponseProvenance } from "../providers/request-pacing";
 export interface AccountSource {
   list(): Array<{
     account: EgressAccount;
@@ -182,7 +183,7 @@ export class ProxyManager {
       });
       for (const field of ["url", "redirected", "type"] as const)
         Object.defineProperty(result, field, { value: response[field] });
-      return result;
+      return carryProviderResponseProvenance(response, result);
     } catch (error) {
       lease?.release();
       failure();

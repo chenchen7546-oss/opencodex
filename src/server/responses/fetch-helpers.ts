@@ -393,8 +393,9 @@ export function providerFetch(
     if (nativeScope) init = { ...init, ...accountEgressInit({ ...nativeScope,
       ...(init as Record<symbol, EgressScope> | undefined)?.[ACCOUNT_EGRESS_SCOPE] }) };
     const upstreamWebsocket = provider.upstreamWebsocket;
+    const managedEgress = hasExplicitAccountEgress(input, init, providerName);
     if (!options.httpOnly && typeof input === "string" && init
-      && shouldUseCodexWsUpstream(input, init, runtime, upstreamWebsocket)) {
+      && shouldUseCodexWsUpstream(input, init, runtime, upstreamWebsocket, managedEgress)) {
       const keyedPacing = provider.requestPacing?.enabled
         && (provider.requestPacing.keys || provider.requestPacing.keySelection === "round-robin");
       if (keyedPacing || (options.providerName && requestPacingMaxConcurrentRequests(provider, options.modelId) > 0)) {
@@ -406,7 +407,7 @@ export function providerFetch(
         return httpFetch(input, init, reacquirePacing);
       }
       const egress = egressFor(input);
-      if (providerEgressIsExplicit(egress) || hasExplicitAccountEgress(input, init, providerName)) {
+      if (providerEgressIsExplicit(egress) || (managedEgress && (customExecutor || transport !== base || options.nativeControl))) {
         warnEgressWebsocketDowngradeOnce(providerName, describeProviderEgressForLog(egress));
         return httpFetch(input, init, reacquirePacing);
       }
@@ -422,9 +423,13 @@ export function providerFetch(
       };
       const fallback = ((url: Parameters<typeof globalThis.fetch>[0], fallbackInit?: RequestInit) =>
         httpFetch(url, { ...fallbackInit, [WS_FALLBACK_RECEIPT]: notifyOnce } as RequestInit, reacquirePacing, null)) as typeof globalThis.fetch;
-      const wsSend = codexWsExecutor((url: Parameters<typeof globalThis.fetch>[0], wsInit?: RequestInit) => codexWsUpstreamFetch(String(url), wsInit ?? init,
+      const wsSend = codexWsExecutor((url: Parameters<typeof globalThis.fetch>[0], wsInit?: RequestInit) => sendWithAccountEgress(url, {
+        ...(wsInit ?? init),
+        ...accountEgressInit({ ...currentAccountEgress(),
+          ...((wsInit ?? init) as Record<symbol, EgressScope>)[ACCOUNT_EGRESS_SCOPE], provider: providerName, purpose: "model" }),
+      }, (target, routedInit) => codexWsUpstreamFetch(String(target), routedInit!,
         fallback, runtime, options.onCodexWsQuota, options.beforeDispatch, options.nativeControl,
-        async () => { (await waitForPacing(init.signal ?? undefined))?.release(); }, notifyOnce, options.preOutputRefusalHold),
+        async () => { (await waitForPacing(init.signal ?? undefined))?.release(); }, notifyOnce, options.preOutputRefusalHold)),
         { provider, http: markEgressTransparentExecutor(fallback) });
       // A WS frame is a physical send like any other, so it runs the same override: that is where a
       // key-auth send is committed to its attempt row and the send budget is rebound to the

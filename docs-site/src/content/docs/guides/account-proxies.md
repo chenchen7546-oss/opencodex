@@ -67,6 +67,18 @@ browser after saving. An edit's empty password field preserves the previous pass
 
 ## Traffic
 
+Ordinary streaming Codex requests now use Responses WebSocket through an assigned HTTP/HTTPS
+proxy or Mihomo node when the runtime supports it. Switching a binding affects new requests;
+existing streams finish on their selected exit. Connections are never reused across different
+proxy URLs or credentials. A failed handshake falls back through the same proxy, without direct
+egress or replaying a frame already sent.
+
+Direct/SOCKS bindings, native mid-turn controls, custom transports and provider-owned proxy
+settings retain HTTP/SSE. A nonempty `NO_PROXY` or `no_proxy` also selects HTTP/SSE so it cannot
+silently bypass the account binding; enforced HTTP bypass handling requires Bun 1.4.3 or newer
+(the custom image includes 1.4.4). Real client metadata is retained, but signatures and device
+attestation are not invented. This is protocol compatibility, not an indistinguishable client.
+
 The Traffic tab shows uploads, downloads, requests, failures and account detail for a selected
 date range. Exported CSV is limited to 10,000 returned daily detail rows; aggregate totals include
 all rows. Day boundaries and monthly limits use UTC. Probes and retries contribute to usage.
@@ -74,6 +86,8 @@ all rows. Day boundaries and monthly limits use UTC. Probes and retries contribu
 These are **application-body counters**: submitted upload bytes and consumed download bytes.
 A failed submitted request can count upload bytes. HTTP/TLS/proxy overhead, other software and
 wire compression differences are excluded, so these totals are not the proxy vendor's bill.
+WebSocket model requests count the submitted Responses body and relayed SSE bytes, excluding
+WebSocket framing and keepalive messages.
 Cancelling a stream records the partial transfer. A process crash may lose the current buffer;
 failed persistence displays an incomplete-statistics warning.
 

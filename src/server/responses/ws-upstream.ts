@@ -26,6 +26,7 @@ import { codexWsPool, codexWsReuseIdentity } from "./codex-ws-pool";
 import { codexWsCreateFrameExceedsLimit, type CodexWsPreOutputRefusalHold } from "./codex-ws-wire";
 import { isLoopbackUrl, rewriteWebSocketDial } from "../../plugins/upstream-hooks";
 import { outboundCredentials } from "../../lib/outbound-credential-registry";
+import { ACCOUNT_EGRESS_SENT } from "../../lib/account-egress";
 export { CODEX_WS_LIVENESS_PING_INTERVAL_MS, CODEX_WS_RESPONSE_PRELUDE_TIMEOUT_MS, MAX_CODEX_WS_FRAME_BYTES, MAX_CODEX_WS_QUEUE_BYTES,
   MAX_CODEX_WS_CREATE_FRAME_BYTES, CODEX_WS_CREATE_FRAME_LIMIT_BYTES, codexWsCreateFrameExceedsLimit,
   isCodexWsQuotaObservedResponse, isCodexWsUpstreamResponse, isCodexWsPreludeProjection } from "./codex-ws-wire";
@@ -95,8 +96,12 @@ export function planCodexWsDial(
   headers: Record<string, string>,
   proxy: string | undefined,
   env: Parameters<typeof resolveProxyRoute>[1] = process.env,
+  managedProxy = false,
 ): { url: string; headers: Record<string, string>; proxy: string | undefined } | null {
   const rewritten = rewriteWebSocketDial(wsUrl, headers, proxy);
+  if (managedProxy && rewritten.url !== wsUrl && isLoopbackUrl(rewritten.url)) {
+    throw new Error("account_proxy_loopback_rewrite_unsupported");
+  }
   // Per-turn headers ride in each frame's client_metadata, which was prepared before the rewrite
   // and is authoritative; a pooled socket's upgrade copy is intentionally ignored. A rewriter
   // therefore cannot change them here, and the upgrade keeps the values the frame carries.
@@ -108,6 +113,8 @@ export function planCodexWsDial(
     else delete dialHeaders[name];
   }
   const dial = { ...rewritten, headers: dialHeaders };
+  // A managed account's selected route overrides environment bypasses even after a rewrite.
+  if (managedProxy) return { ...dial, proxy };
   if (dial.url === wsUrl || isLoopbackUrl(dial.url)) return dial;
   let destination: URL;
   try {
@@ -125,9 +132,10 @@ export function shouldUseCodexWsUpstream(
   init?: RequestInit,
   runtime: BunRuntimeGateInput = currentBunRuntimeIdentity(),
   upstreamWebsocketConfigured?: boolean,
+  managedEgress = false,
 ): boolean {
   if (!bunSupportsBoundedCodexWsRelay(runtime)) return false;
-  if (socks5ProxyFromEnv()) return false;
+  if (!managedEgress && socks5ProxyFromEnv()) return false;
   if (url === CODEX_RESPONSES_HTTP_URL && upstreamWebsocketConfigured === false) return false;
   // Bun's client WebSocket API delivers only fully assembled messages and has
   // no enforceable inbound payload limit. Keep arbitrary provider endpoints on
@@ -169,6 +177,17 @@ export async function codexWsUpstreamFetch(
   const prepared = prepareCodexWsRequest(url, init);
   if (!prepared) return sseFallback(url, prepareCodexHttpInit(url, init));
   init = prepared.httpInit;
+  const managedEgress = (init as Record<symbol, unknown>)[ACCOUNT_EGRESS_SENT] === true;
+  const managedProxy = managedEgress ? (init as RequestInit & { proxy?: unknown }).proxy : undefined;
+  // Bun's WS client accepts HTTP(S) tunnels, including Mihomo's authenticated mixed listener.
+  // Explicit direct and SOCKS routes keep the existing HTTP transport; never reinterpret them
+  // as an environment/default WS route or change process-wide proxy variables.
+  if (managedEgress && (typeof managedProxy !== "string" || !/^https?:\/\//i.test(managedProxy)
+    || process.env.NO_PROXY?.trim() || process.env.no_proxy?.trim())) {
+    // Unlike fetch, Bun WS has no documented respectNoProxy:false option. Do not dial when
+    // an environment bypass could override the account route; the HTTP owner enforces it.
+    return sseFallback(url, init);
+  }
   if ((url !== CODEX_RESPONSES_HTTP_URL && url !== OPENAI_API_RESPONSES_URL)
     || !bunSupportsBoundedCodexWsRelay(runtime)) {
     return sseFallback(url, init);
@@ -200,7 +219,9 @@ export async function codexWsUpstreamFetch(
   }
 
   const wsUrl = wsUpstreamUrlFor(url);
-  const proxyRoute = resolveProxyRoute(new URL(wsUrl));
+  const proxyRoute = managedEgress
+    ? { kind: "proxy" as const, proxy: managedProxy as string }
+    : resolveProxyRoute(new URL(wsUrl));
   if (proxyRoute.kind === "fallback") return sseFallback(url, init);
   const proxy = proxyRoute.kind === "proxy" ? proxyRoute.proxy : undefined;
   // A genuine caller `originator` is already in these headers via the forward
@@ -216,13 +237,15 @@ export async function codexWsUpstreamFetch(
     return Promise.reject(error);
   }
   let session: CodexWsSession;
+  // An explicit route refusal must not turn into a plugin-rewritten direct fallback.
+  const managedDial = managedEgress ? planCodexWsDial(wsUrl, headers, proxy, process.env, true) : undefined;
   try {
     // Steering keeps a private physical connection across successor responses; it
     // must never enter the idle-socket pool or move to a different credential.
     // Plugin rewrite runs per exchange, before the pool lookup. The dialled destination, its
     // headers and its proxy are all part of the reuse identity, so a pooled socket is never
     // reused for a different destination or with stale plugin headers.
-    const dial = planCodexWsDial(wsUrl, headers, proxy);
+    const dial = managedDial ?? planCodexWsDial(wsUrl, headers, proxy);
     if (!dial) return sseFallback(url, init);
     // The final dial headers, after plugin rewrites, are what the WebSocket upstream receives; the
     // per-turn headers planning drops from the upgrade still reach it inside the frame metadata.

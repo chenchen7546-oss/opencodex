@@ -1,4 +1,5 @@
 {
+  "responses-account-proxy-ws.test.ts": "responses",
   "passthrough-media-type.test.ts": "responses",
   "passthrough-override.test.ts": "responses",
   "passthrough-headers.test.ts": "responses",

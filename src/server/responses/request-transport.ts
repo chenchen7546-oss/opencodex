@@ -1,5 +1,5 @@
 import { dispatchEgressScope } from "../../lib/account-egress-dispatch";
-import { accountEgressInit, hasExplicitAccountEgress, withAccountEgress } from "../../lib/account-egress";
+import { accountEgressInit, withAccountEgress } from "../../lib/account-egress";
 import { SendBudgetExhaustedError } from "../../lib/upstream-retry";
 import { appendLoadedToolDefinitions, appendOnlyToolLoadingMatches } from "../../claude/inbound-tool-loading";
 import { isRec } from "../../claude/inbound-records";
@@ -900,7 +900,7 @@ export async function prepareResponsesTransport(
             // The WS executor dials its own socket: HTTP connection policy and body coding do not apply.
             // WS eligibility (egress, pacing, URL) was checked for the provider it was built for; a
             // provider reselected above was not, so it takes the HTTP fallback under its own route.
-            const physicalFetch = ((input, physicalInit) => ws?.provider === route.provider && !hasExplicitAccountEgress(input,physicalInit,route.providerName) ? execute(input, physicalInit) : sendWithConnectionPolicy(
+            const physicalFetch = ((input, physicalInit) => ws?.provider === route.provider ? execute(input, physicalInit) : sendWithConnectionPolicy(
               distributedKeyPhysicalFetch(anthropicBillingPhysicalFetch(fetchImpl, route.providerName, route.provider), route.providerName, route.provider, target),
               input,
               { ...physicalInit, redirect: "manual",

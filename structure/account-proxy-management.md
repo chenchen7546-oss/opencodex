@@ -28,7 +28,19 @@ a stored account; provider defaults apply where a provider is known.
 the seam. `src/codex/account-egress-context.ts` carries a nonserialized native pool identity on request-owned providers, including source-linked credentials; stripping runtime auth on reselection also strips that identity. `src/server/responses/request-transport.ts` updates that scope after reselection.
 The account manager applies the route at the physical send in
 `src/server/responses/fetch-helpers.ts`; a symbol prevents nested transport wrappers from counting
-or routing twice. Opt-in agent-task recovery also enters the account fetch seam with the OpenAI provider hint. Account-bound Codex WebSocket sends use HTTP/SSE, including dispatch-time fallback.
+or routing twice. Opt-in agent-task recovery also enters the account fetch seam with the OpenAI provider hint.
+Ordinary account-bound Codex streaming turns can use Responses WebSocket through HTTP(S) profiles
+and Mihomo's authenticated HTTP listener. The account seam resolves the final credential and live
+binding before dialing; the existing pool identity includes the selected proxy URL and credential.
+Handshake fallback keeps that route and counts one submitted application request. The traffic body
+wrapper carries registered transport/quota provenance and non-replayability through the shared helper
+in `src/providers/request-pacing.ts`; a post-send socket failure must not become a fresh replay.
+Explicit direct/SOCKS, native-control, custom/TLS executors and provider-owned egress retain HTTP/SSE.
+If either NO_PROXY variable is nonempty, managed WebSocket also uses HTTP: Bun's WS API cannot
+disable that bypass reliably. `src/lib/proxy-env.ts` uses fetch's `respectNoProxy: false` for managed
+HTTP(S) routes in that case (Bun >= 1.4.3; older runtimes refuse). No process environment is mutated.
+Plugin rewrites to loopback remain refused on managed routes. Client originator/User-Agent metadata
+is preserved when supplied; no client identity or signed attestation is fabricated.
 `src/adapters/cursor/live-transport.ts` and `live-models.ts` select HTTP/1.1 when a managed route is
 explicit. The model stream remains streamed; no complete response is buffered for accounting.
 
@@ -116,6 +128,8 @@ Renamed nodes are new identities. Imported credentials never appear in GET respo
 ## Traffic and resource limits
 
 Counters represent submitted request-body bytes and consumed response-body bytes, not wire bytes.
+For a WebSocket upstream these use the submitted Responses body and the relayed SSE representation;
+WebSocket framing/pings and physical connection counts are not included.
 Retries and probes are included. Buffered uploads may be counted before a connection succeeds;
 TLS, proxy handshakes, HTTP headers, compression differences and other applications are excluded.
 Cancelling a response propagates upstream and marks the partial request incomplete.

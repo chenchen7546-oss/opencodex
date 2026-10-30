@@ -2,7 +2,7 @@ name: opencodex-custom
 
 services:
   hub:
-    image: ${OPENCODEX_IMAGE:-opencodex-custom:20261029-6}
+    image: ${OPENCODEX_IMAGE:-opencodex-custom:20261030-1}
     platform: ${OPENCODEX_PLATFORM:-linux/amd64}
     pull_policy: never
     init: true

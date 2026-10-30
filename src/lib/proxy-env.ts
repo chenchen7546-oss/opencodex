@@ -1,5 +1,6 @@
 import { socks5Fetch } from "./socks5-fetch";
-import { sendWithAccountEgress } from "./account-egress";
+import { ACCOUNT_EGRESS_SENT, sendWithAccountEgress } from "./account-egress";
+import { compareBunVersions } from "./bun-stream-caps";
 
 export const OUTBOUND_PROXY_ENV_KEYS = ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY"] as const;
 export const PROXY_ENV_KEYS = [...OUTBOUND_PROXY_ENV_KEYS, "NO_PROXY"] as const;
@@ -238,6 +239,16 @@ function unmanagedOutboundFetch(
   }
   if (proxy && (url.protocol === "http:" || url.protocol === "https:") && (explicitProxy !== undefined || !noProxyMatches(url))) {
     return socks5Fetch(input, init, proxy);
+  }
+  if ((init as Record<symbol, unknown> | undefined)?.[ACCOUNT_EGRESS_SENT] === true
+    && typeof explicitProxy === "string" && /^https?:\/\//i.test(explicitProxy)
+    && (process.env.NO_PROXY?.trim() || process.env.no_proxy?.trim())) {
+    // A user-selected account route outranks process bypass rules. Bun applies NO_PROXY even
+    // to a string proxy option; its explicit opt-out is available from the 1.4.3 fetch API.
+    if ((compareBunVersions(Bun.version, "1.4.3") ?? -1) < 0) {
+      throw new Error("account_proxy_bypass_requires_bun_1_4_3");
+    }
+    return base!(input, { ...init, proxy: { url: explicitProxy, respectNoProxy: false } });
   }
   return base!(input, init);
 }

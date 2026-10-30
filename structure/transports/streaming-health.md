@@ -251,7 +251,7 @@ Its WSS route checks NO_PROXY first, then selects the
 first non-empty HTTPS_PROXY, https_proxy, ALL_PROXY, or all_proxy value. HTTP_PROXY alone does not
 route WSS. Unsupported or malformed selected proxy values skip the WebSocket attempt and use the
 existing SSE path immediately; they never fall through to a lower-priority proxy or direct WebSocket
-egress. HTTP/SSE fallback retains Bun fetch's own proxy rules, which do not consult ALL_PROXY.
+egress. HTTP/SSE fallback retains the runtime's proxy rules. The custom [account proxy layer](../account-proxy-management.md#identity-and-route-selection) supplies request-owned HTTP(S) tunnels to `src/server/responses/ws-upstream.ts`, retaining the bound route across handshake fallback and pooled reuse. Its traffic wrapper preserves WS/quota/failure provenance. Managed native-control and environment-bypass cases retain enforced HTTP/SSE.
 
 The endpoint handles `response.create`, ignores `response.processed`, supports warmup
 `generate: false`, and feeds the same request pipeline as HTTP/SSE.
