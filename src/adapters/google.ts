@@ -389,7 +389,11 @@ function messagesToGeminiFormat(
 ): { systemInstruction?: unknown; contents: unknown[]; replayedCallIds: string[] } {
   // Neutralize Codex's GPT-5 identity line (Gemini/Antigravity share this path) so a routed model
   // never misreports as GPT-5/OpenAI, and never leaks the proxy identity upstream.
-  const toolCatalogNudge = buildNonOpenAIToolCatalogNudgeForTools(parsed.context.tools, parsed.options.toolChoice);
+  // CCA Gemini consumes the native declarations directly. Repeating the catalog as a
+  // synthetic system message makes even a single valid function fail with RESOURCE_EXHAUSTED.
+  const toolCatalogNudge = isCloudCodeAssist && /^gemini-/i.test(identityModelId)
+    ? undefined
+    : buildNonOpenAIToolCatalogNudgeForTools(parsed.context.tools, parsed.options.toolChoice);
   const identifiedSystemText = identifyRoutedModel([
     ...(parsed.context.systemPrompt ?? []),
     ...(toolCatalogNudge ? [toolCatalogNudge] : []),

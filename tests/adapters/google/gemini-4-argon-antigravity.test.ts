@@ -63,6 +63,38 @@ afterEach(() => {
 });
 
 describe("Gemini 4 Argon on Antigravity", () => {
+  test.each(["gemini-4-argon", "gemini-4-carbon", "gemini-4-hydrogen", "gemini-3.8-flash"])(
+    "%s sends the native catalog once and keeps caller-authored tool instructions",
+    async model => {
+      const req = parsedWithEffort(model, "low");
+      const instructions = "Tool contract: keep the user's verification code private.";
+      req.context.systemPrompt = [instructions];
+      req.context.tools = [{
+        name: "lookup_status", description: "Read a service's verification code.",
+        parameters: { type: "object", properties: { component: { type: "string" } }, required: ["component"] },
+      }];
+      const adapter = createGoogleAdapter(provider);
+      const build = async () => JSON.parse((await adapter.buildRequest(req)).body).request;
+      const first = await build();
+      const declaration = first.tools[0].functionDeclarations[0];
+      expect(declaration).toMatchObject(req.context.tools[0]!);
+      expect(first.systemInstruction.parts[0].text).toContain(instructions);
+      expect(first.systemInstruction.parts[0].text).not.toContain("Valid tool names for this turn are exactly");
+      expect(first.toolConfig).toBeUndefined();
+
+      req.context.messages.push(
+        { role: "assistant", content: [{ type: "toolCall", id: "call_42", name: "lookup_status", arguments: { component: "server" } }] },
+        { role: "toolResult", toolCallId: "call_42", toolName: "lookup_status", content: "verification-42", isError: false },
+      );
+      const follow = await build();
+      expect(follow.tools).toEqual(first.tools);
+      expect(follow.contents.at(-2).parts[0].functionCall)
+        .toMatchObject({ id: "call_42", name: "lookup_status", args: { component: "server" } });
+      expect(follow.contents.at(-1).parts[0].functionResponse)
+        .toMatchObject({ id: "call_42", name: "lookup_status", response: { result: "verification-42" } });
+    },
+  );
+
   test("summary opt-in sends the selected Argon tier and includeThoughts together", async () => {
     const adapter = createGoogleAdapter({ ...provider, showThinkingSummary: true });
     const request = await adapter.buildRequest(parsedWithEffort("gemini-4-argon", "high"));

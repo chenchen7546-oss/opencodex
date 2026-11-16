@@ -159,6 +159,8 @@ to their tool calls independently; they never become Anthropic thinking signatur
 For CCA Argon summaries, the adapter also repeats the selected wire suffix tier as `thinkingLevel`;
 when summaries are disabled, Argon and the web-search sidecar retain their suffix-only request shape.
 
+CCA Gemini reads the available tools from `functionDeclarations` and the caller's choice from `functionCallingConfig`. Appending a second, generated tool catalog to the system instructions caused a reproducible Argon `429 RESOURCE_EXHAUSTED` before the first call. The adapter omits that generated paragraph on this path. Caller instructions, function descriptions, argument schemas, tool selections and call/result history travel through their existing fields.
+
 The visibility marker is the boolean `thought: true`, not the presence of a `thoughtSignature`
 or the wording of the text. An unmarked signed text part remains ordinary assistant output;
 a signature-only part produces no text. Responses keeps summaries in reasoning items, Chat in

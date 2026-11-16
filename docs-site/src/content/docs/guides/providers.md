@@ -275,7 +275,7 @@ pinned list, or use model discovery for your account. AI Studio and Vertex omit 
 The Developer API supports 65,536 tokens per streaming hop for these models. For buffered REST,
 Hydrogen supports 65,536 and Carbon and Argon support 32,768. [Google migration guide](https://aistudio.google.com/docs/whats-new-gemini-4-hydrogen)
 
-If an Antigravity request returns `429 RESOURCE_EXHAUSTED` with tools enabled, compare the same account, model, effort and prompt with `tool_choice: "none"` while keeping the tool declarations. This tests text generation separately from tool availability. Keep tools enabled for workflows that need them. An upstream quota reason or reset time, when supplied, can identify which limit applied.
+Antigravity Gemini sends functions through Google's native tool declarations and preserves the caller's system instructions. Both Responses and Chat Completions support returning a tool result using the call ID from the model's first reply. Keep tools enabled on the next turn if the model may need another function.
 
 Gemini 4 Argon (`gemini-4-argon`) is listed on the `google` preset with low, medium (the
 default), and high thinking levels. Google offers it on the paid Gemini API tier only, not the free

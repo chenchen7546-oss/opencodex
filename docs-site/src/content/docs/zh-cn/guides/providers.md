@@ -226,7 +226,7 @@ Google AI Studio 的 `google` 预设支持 `gemini-4-hydrogen`、`gemini-4-carbo
 
 AI Studio 和 Vertex 在请求以上 Gemini 4 模型时会省略旧客户端传入的采样参数。AI Studio 单次流式请求最多输出 65,536 个 token，非流式请求中 Hydrogen 的上限相同，Carbon 和 Argon 为 32,768。Antigravity 按登录账号发现可用模型和档位。[Google 迁移指南](https://aistudio.google.com/docs/whats-new-gemini-4-hydrogen)
 
-如果 Antigravity 在允许工具调用时返回 `429 RESOURCE_EXHAUSTED`，可保留原工具声明，在同一账号、模型、推理档位和提示词下改用 `tool_choice: "none"` 对照测试纯文本。需要实际调用工具的工作流应保持工具启用。判断触发了哪项限制时，可查看上游是否返回具体的配额原因或重置时间。
+Antigravity 的 Gemini 模型通过 Google 原生接口接收函数声明，并保留调用方的系统指令。使用 Responses 或 Chat Completions 时，把第一轮返回的工具调用 ID 随执行结果传回，模型即可继续回答。后续可能继续调用函数时，下一轮应继续携带工具声明。
 
 opencodex 内置 108 个预设：87 个密钥预设、17 个 OAuth 预设、3 个本地预设，以及 1 个默认的
 ChatGPT 转发预设。仪表盘的 **Add provider** 选择器会打开密钥提供商的控制台，验证并保存密钥。
