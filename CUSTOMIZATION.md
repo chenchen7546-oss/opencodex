@@ -152,4 +152,4 @@ Mihomo 使用的 `core-*` 是私有临时配置；异常退出遗留的目录可
 
 20261030-1 为绑定 HTTP／HTTPS 或 Mihomo 节点的普通 Codex 流式请求接入原生 Responses WebSocket，按实际账号和最新绑定选路，切换出口不复用旧代理连接。握手失败沿原绑定回退；流量包装保留 WS 与不可重放标记。直连／SOCKS、原生中途控制、自定义传输以及存在 NO_PROXY 的场景保留 HTTP 路径；受管 HTTP 代理通过 Bun 1.4.3+ 的 respectNoProxy:false 防止环境绕过。不伪造客户端签名或设备证明，也不承诺与官方客户端完全不可区分。
 
-20261116-1 合并上游 dev 的 858ea8d88（含 v2.100.3），为 AI Studio 增补 Gemini 4 Hydrogen、Carbon，适配同步输出与旧客户端采样参数。升级时沿用原提供商、账号绑定、SMTP 配置和数据卷。
+20261116-2 合并上游 dev 的 da021e37d（含 v2.100.3），为 AI Studio 增补 Gemini 4 Hydrogen、Carbon，适配同步输出与旧客户端采样参数。升级时沿用原提供商、账号绑定、SMTP 配置和数据卷。

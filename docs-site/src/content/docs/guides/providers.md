@@ -271,9 +271,11 @@ when the plan is unknown; it does not affect routing or quota.
 The `google` (AI Studio) preset also lists `gemini-4-hydrogen` and `gemini-4-carbon`.
 Hydrogen supports low, medium, high (default) and xhigh. Carbon and Argon use low, medium (default)
 and high. An existing default model or explicit model list stays selected. Add the desired ID to a
-pinned list, or use model discovery for your account. Gemini 4 requests omit legacy sampling controls.
+pinned list, or use model discovery for your account. AI Studio and Vertex omit legacy sampling controls for these Gemini 4 models.
 The Developer API supports 65,536 tokens per streaming hop for these models. For buffered REST,
 Hydrogen supports 65,536 and Carbon and Argon support 32,768. [Google migration guide](https://aistudio.google.com/docs/whats-new-gemini-4-hydrogen)
+
+If an Antigravity request returns `429 RESOURCE_EXHAUSTED` with tools enabled, compare the same account, model, effort and prompt with `tool_choice: "none"` while keeping the tool declarations. This tests text generation separately from tool availability. Keep tools enabled for workflows that need them. An upstream quota reason or reset time, when supplied, can identify which limit applied.
 
 Gemini 4 Argon (`gemini-4-argon`) is listed on the `google` preset with low, medium (the
 default), and high thinking levels. Google offers it on the paid Gemini API tier only, not the free

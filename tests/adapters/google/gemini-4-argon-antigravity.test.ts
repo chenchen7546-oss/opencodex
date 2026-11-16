@@ -71,6 +71,39 @@ describe("Gemini 4 Argon on Antigravity", () => {
     expect(env.request.generationConfig.thinkingConfig).toEqual({ thinkingLevel: "high", includeThoughts: true });
   });
 
+  test("a tools-enabled 429 reaches the caller with the requested tool catalog intact on every attempt", async () => {
+    const adapter = createGoogleAdapter(provider);
+    const request = parsedWithEffort("gemini-4-argon", "low");
+    request.context.tools = [{
+      name: "lookup_status", description: "Read a component's status.",
+      parameters: { type: "object", properties: { component: { type: "string" } }, required: ["component"] },
+    }];
+    const modes: string[] = [];
+    const executor = (async (_url: RequestInfo | URL, init?: RequestInit) => {
+      const envelope = JSON.parse(String(init?.body));
+      expect(envelope.model).toBe("gemini-4-argon-low");
+      expect(envelope.request.tools[0].functionDeclarations.map((tool: { name: string }) => tool.name))
+        .toEqual(["lookup_status"]);
+      const mode = envelope.request.toolConfig?.functionCallingConfig?.mode ?? "AUTO";
+      modes.push(mode);
+      if (mode === "NONE") return Response.json({ candidates: [{ content: { role: "model", parts: [{ text: "OK" }] } }] });
+      return Response.json({ error: { code: 429, status: "RESOURCE_EXHAUSTED", message: "Resource has been exhausted." } },
+        { status: 429, headers: { "Retry-After": "0" } });
+    }) as typeof fetch;
+
+    const send = async () => adapter.fetchResponse!(await adapter.buildRequest(request), { executor, returnRawErrors: true });
+    const refusal = await send();
+    expect(refusal.status).toBe(429);
+    expect((await refusal.json()).error.status).toBe("RESOURCE_EXHAUSTED");
+    expect(modes.length).toBeGreaterThan(0);
+    expect(new Set(modes)).toEqual(new Set(["AUTO"]));
+
+    request.options.toolChoice = "none";
+    const textOnly = await send();
+    expect(textOnly.status).toBe(200);
+    expect(modes.at(-1)).toBe("NONE");
+  });
+
   test("prototype-property effort names fall back to the medium Argon tier", () => {
     for (const effort of ["toString", "constructor"]) {
       expect(resolveAntigravityEffortWireModel("gemini-4-argon", effort))
