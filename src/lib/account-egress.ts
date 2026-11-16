@@ -31,6 +31,9 @@ export function registerAccountEgress(next: AccountEgressHooks | undefined): voi
 export function withAccountEgress<T>(scope: EgressScope, run: () => T): T {
   return scopes.run(scope, run);
 }
+export function withOAuthQuotaEgress<T>(provider: string, id: string, read: () => T): T {
+  return withAccountEgress({ account: { kind: "oauth", provider, id }, purpose: "quota" }, read);
+}
 export function currentAccountEgress(): EgressScope | undefined {
   return scopes.getStore();
 }

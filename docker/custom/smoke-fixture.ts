@@ -37,6 +37,11 @@ if (mode === "seed") {
     providers: {
       "fixture-a": provider,
       "fixture-b": { ...provider, apiKey: "fixture-upstream-key-b" },
+      "fixture-gemini": {
+        adapter: "google", authMode: "key", baseUrl: "http://gemini.fixture.test", apiKey: "fixture-google-key",
+        models: ["gemini-4-hydrogen", "gemini-4-carbon", "gemini-4-argon", "gemini-3.8-flash"], liveModels: false,
+        modelReasoningEfforts: { "gemini-4-hydrogen": ["low", "medium", "high", "xhigh"] },
+      },
     },
     defaultProvider: "fixture-a",
   };
@@ -196,6 +201,19 @@ if (mode === "seed") {
             buffer.subarray(boundary + 4, boundary + 4 + length).toString() ||
               "{}",
           );
+          const gemini = /\/v1beta\/models\/(gemini-[\w.-]+):(streamGenerateContent|generateContent)\b/.exec(headers.split("\r\n", 1)[0]!);
+          if (gemini) {
+            const model = gemini[1];
+            const stream = gemini[2] === "streamGenerateContent";
+            const config = request.generationConfig ?? {};
+            const valid = request.contents?.length > 0
+              && /x-goog-api-key:\s*fixture-google-key\s*$/im.test(headers)
+              && (model !== "gemini-4-hydrogen" || config.thinkingConfig?.thinkingLevel === "xhigh");
+            const reply = { candidates: [{ content: { role: "model", parts: [{ text: label }] }, finishReason: "STOP" }] };
+            const body = stream ? `data: ${JSON.stringify(reply)}\n\n` : JSON.stringify(reply);
+            socket.end(`HTTP/1.1 ${valid ? "200 OK" : "400 Bad Request"}\r\nContent-Type: ${stream ? "text/event-stream" : "application/json"}\r\nContent-Length: ${Buffer.byteLength(body)}\r\nConnection: close\r\n\r\n${body}`);
+            return;
+          }
           const streaming = request.stream === true;
           const events = [
             {
@@ -256,7 +274,7 @@ if (mode === "seed") {
       const accounts = before.accounts.filter(
         (row: { account: { kind: string } }) => row.account.kind === "key",
       );
-      check(accounts.length === 2, "Synthetic accounts missing");
+      check(accounts.length === 3, "Synthetic accounts missing");
       for (const row of accounts)
         await api("/bindings", "PUT", {
           accounts: [row.account],
@@ -268,8 +286,8 @@ if (mode === "seed") {
                 : advanced.ids[0],
           },
         });
-      async function model(provider: string) {
-        const response = await fetch(`${origin}/v1/responses`, {
+      async function model(provider: string, id = "fixture-model", chat = false, stream = false) {
+        const response = await fetch(`${origin}/v1/${chat ? "chat/completions" : "responses"}`, {
           method: "POST",
           signal: AbortSignal.timeout(25_000),
           headers: {
@@ -277,9 +295,10 @@ if (mode === "seed") {
             "content-type": "application/json",
           },
           body: JSON.stringify({
-            model: `${provider}/fixture-model`,
-            input: "Synthetic fixture only",
-            stream: false,
+            model: `${provider}/${id}`,
+            ...(chat ? { messages: [{ role: "user", content: "Synthetic fixture only" }] } : { input: "Synthetic fixture only" }),
+            ...(id === "gemini-4-hydrogen" && (chat ? { reasoning_effort: "xhigh" } : { reasoning: { effort: "xhigh" } })),
+            stream,
           }),
         });
         return { status: response.status, body: await response.text() };
@@ -304,6 +323,15 @@ if (mode === "seed") {
         `Mihomo model request failed (${core.status})`,
       );
       check((await api()).core.running, "Mihomo did not start");
+      const listed = await fetch(`${origin}/v1/models`, { headers: { "x-opencodex-api-key": dataToken } });
+      const catalog = await listed.json() as { data: Array<{ id: string }> };
+      check(listed.ok && catalog.data.some(row => row.id === "fixture-gemini/gemini-4-hydrogen"), "Gemini 4 catalog missing");
+      for (const id of ["gemini-4-hydrogen", "gemini-4-carbon", "gemini-4-argon", "gemini-3.8-flash"]) {
+        for (const chat of [false, true]) {
+          const result = await model("fixture-gemini", id, chat, chat);
+          check(result.status === 200 && result.body.includes("via-mihomo-proxy"), `Gemini route failed (${id}, ${chat}, ${result.status})`);
+        }
+      }
       for (let attempt = 0; attempt < 20; attempt++) {
         const useFirst = attempt % 2 === 0;
         await api(`/profiles/${advanced.ids[0]}`, "PATCH", {
@@ -338,6 +366,8 @@ if (mode === "seed") {
           reassigned.body.includes("via-native-proxy"),
         "Bulk binding did not change the egress",
       );
+      const switched = await model("fixture-gemini", "gemini-4-hydrogen");
+      check(switched.status === 200 && switched.body.includes("via-native-proxy"), "Gemini did not follow the new account binding");
       await api(`/profiles/${native.id}`, "PATCH", { enabled: false });
       const sent = calls;
       const denied = await model("fixture-a");
@@ -364,7 +394,7 @@ if (mode === "seed") {
         { mode: 0o600 },
       );
       console.log(
-        "PASS: admin boundary, HTTP + Mihomo model routing, cross-provider bulk binding, refusal and traffic.",
+        "PASS: admin boundary, HTTP + Mihomo routing, Gemini 4 and legacy Gemini on Responses and streaming Chat, proxy switching, refusal and traffic.",
       );
     } finally {
       for (const socket of sockets) socket.destroy();

@@ -11,7 +11,7 @@ import { pinnedHttpGet, pinnedHttpPost } from "./pinned-http";
 import { configuredOutboundFetch, effectiveProxyFor, noProxyMatches, normalizeProxyHostname, schemeMatchedProxyFor } from "./proxy-env";
 import { InvalidProviderEgressError, resolveProviderEgress } from "./provider-egress";
 import { publicProviderBaseUrl } from "./provider-url";
-import { ACCOUNT_EGRESS_SENT, accountEgressInit, currentAccountEgress, sendWithAccountEgress } from "./account-egress";
+import { ACCOUNT_EGRESS_SCOPE, ACCOUNT_EGRESS_SENT, accountEgressInit, currentAccountEgress, sendWithAccountEgress, type EgressScope } from "./account-egress";
 
 type ProviderGetInit = Omit<RequestInit, "body" | "method" | "redirect">;
 type ProviderPostInit = ProviderGetInit & { body: string };
@@ -229,7 +229,12 @@ async function providerOutboundRequest(
   rawInit: ProviderGetInit | ProviderPostInit,
   dependencies: ProviderOutboundDependencies = {},
 ): Promise<Response> {
-  if (!(rawInit as Record<symbol,unknown>)[ACCOUNT_EGRESS_SENT]) return sendWithAccountEgress(url,{...rawInit,...accountEgressInit({...currentAccountEgress(),provider:name})},(_url,init)=>providerOutboundRequest(name,provider,url,method,{...init,[ACCOUNT_EGRESS_SENT]:true} as ProviderGetInit|ProviderPostInit,dependencies));
+  if (!(rawInit as Record<symbol, unknown>)[ACCOUNT_EGRESS_SENT]) {
+    const selected = (rawInit as Record<symbol, EgressScope>)[ACCOUNT_EGRESS_SCOPE] ?? currentAccountEgress();
+    return sendWithAccountEgress(url, { ...rawInit, ...accountEgressInit({ ...selected, provider: name }) },
+      (_url, init) => providerOutboundRequest(name, provider, url, method,
+        { ...init, [ACCOUNT_EGRESS_SENT]: true } as ProviderGetInit | ProviderPostInit, dependencies));
+  }
   // See PROVIDER_OUTBOUND_DEFAULT_USER_AGENT: this wrapper only carries proxy-originated
   // diagnostic traffic, so it identifies itself unless the caller already did.
   const init = withDefaultOutboundUserAgent(rawInit);

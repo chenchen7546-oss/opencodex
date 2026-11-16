@@ -1,10 +1,11 @@
+import { targetFetch, type ApiTargetCapture } from "../../api";
 import { useT } from "../../i18n/shared";
 import { requestTextValue } from "../../action-dialogs";
 import { credentialAliasRejection, CREDENTIAL_ALIAS_MAX_LENGTH } from "../../credential-alias";
 import { accountDisplayName, type AccountRow } from "./types";
 
-export function AccountIdentity({ row, apiBase, busy, act }: {
-  row: AccountRow; apiBase: string; busy: boolean;
+export function AccountIdentity({ row, capture, busy, act }: {
+  row: AccountRow; capture: ApiTargetCapture; busy: boolean;
   act: (work: () => Promise<void>) => Promise<void>;
 }) {
   const t = useT();
@@ -19,7 +20,7 @@ export function AccountIdentity({ row, apiBase, busy, act }: {
       const { kind, provider, id } = row.account;
       const alias = entered.trim();
       const path = kind === "oauth" ? "/api/oauth/accounts/alias" : kind === "key" ? "/api/providers/keys/alias" : "/api/codex-auth/accounts/alias";
-      const response = await fetch(apiBase + path, { method: "PUT", headers: { "Content-Type": "application/json" },
+      const response = await targetFetch(capture, capture.apiBase + path, { method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(kind === "oauth" ? { provider, accountId: id, alias } : kind === "key" ? { name: provider, id, alias } : { id, alias }) });
       if (!response.ok) throw new Error(t("prov.aliasSaveFailed"));
     });

@@ -25,12 +25,10 @@ export function dispatchEgressScope(
       account: { kind: "oauth", provider: binding.snapshot.provider, id: binding.snapshot.accountId },
     };
   const keyConfig = binding?.kind === "api-key" ? binding.provider : config;
-  const id =
-    keyConfig._apiKeyAttempt?.entryId ??
-    (keyConfig._apiKeyAttempt?.reference
-      ? apiKeyPoolEntryId(keyConfig._apiKeyAttempt.reference)
-      : keyConfig.authMode !== "oauth" && keyConfig.authMode !== "forward" && keyConfig.apiKey
-        ? apiKeyPoolEntryId(keyConfig.apiKey)
-        : undefined);
+  const reference = keyConfig._apiKeyAttempt?.reference ??
+    (keyConfig.authMode !== "oauth" && keyConfig.authMode !== "forward" ? keyConfig.apiKey : undefined);
+  const id = keyConfig._apiKeyAttempt?.entryId ?? (reference
+    ? keyConfig.apiKeyPool?.find(entry => !entry.disabled && entry.key === reference)?.id ?? apiKeyPoolEntryId(reference)
+    : undefined);
   return { provider, purpose: "model", ...(id ? { account: { kind: "key" as const, provider, id } } : {}) };
 }

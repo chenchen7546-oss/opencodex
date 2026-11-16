@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 
 const root = resolve(import.meta.dir, "../..");
 const project = `ocx-custom-test-${randomUUID().slice(0, 12)}`;
-const image = process.argv[2] ?? "opencodex-custom:20261030-1";
+const image = process.argv[2] ?? "opencodex-custom:20261116-1";
 if (!/^[a-zA-Z0-9][a-zA-Z0-9._/:@-]*$/.test(image))
   throw new Error("Invalid image reference");
 const env = {
@@ -230,6 +230,8 @@ writeFileSync(
         "HTTP routing",
         "Mihomo routing",
         "cross-provider bulk assignment",
+        "Gemini 4 and legacy Gemini on Responses and streaming Chat",
+        "model requests after account proxy reassignment",
         "disabled route refusal",
         "traffic accounting",
         "recreation persistence",

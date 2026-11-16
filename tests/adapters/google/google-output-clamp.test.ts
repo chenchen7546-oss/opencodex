@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { clampGoogleMaxOutputTokens, maxOutputTokensForGoogleModel } from "../../../src/adapters/google";
+import { routedProviderConfig } from "../../../src/providers/routed-config";
+import type { OcxParsedRequest } from "../../../src/types";
+import { createGoogleAdapter, clampGoogleMaxOutputTokens, maxOutputTokensForGoogleModel } from "../../../src/adapters/google";
 
 describe("google maxOutputTokens clamp", () => {
   test("returns model-specific max output tokens limit", () => {
@@ -44,5 +46,42 @@ describe("google maxOutputTokens clamp", () => {
     expect(clampGoogleMaxOutputTokens("gemini-3.7-flash", undefined)).toBeUndefined();
     expect(clampGoogleMaxOutputTokens("gemini-3.7-flash", 0)).toBeUndefined();
     expect(clampGoogleMaxOutputTokens("gemini-3.7-flash", -10)).toBeUndefined();
+  });
+});
+
+describe("Gemini Developer API compatibility for existing clients", () => {
+  const adapter = createGoogleAdapter(routedProviderConfig("google", {
+    adapter: "google", baseUrl: "https://generativelanguage.googleapis.com", apiKey: "fixture",
+  }));
+  const cases = [
+    { id: "gemini-4-hydrogen", effort: "xhigh", buffered: 65536 },
+    { id: "gemini-4-carbon", effort: "high", buffered: 32768 },
+    { id: "gemini-4-argon", effort: "high", buffered: 32768 },
+  ];
+  for (const { id, effort, buffered } of cases) {
+    test(id + " honors the selected model, effort and synchronous output limit", async () => {
+      for (const stream of [false, true]) {
+        const parsed: OcxParsedRequest = {
+          modelId: id, stream, context: { messages: [{ role: "user", content: "hi" }] },
+          options: { reasoning: "xhigh", maxOutputTokens: 100000, temperature: 0.5, topP: 0.9 },
+        };
+        const request = await adapter.buildRequest(parsed);
+        expect(new URL(request.url).pathname).toBe("/v1beta/models/" + id + ":" + (stream ? "streamGenerateContent" : "generateContent"));
+        const config = JSON.parse(request.body).generationConfig;
+        expect(config.thinkingConfig.thinkingLevel).toBe(effort);
+        expect(config.maxOutputTokens).toBe(stream ? 65536 : buffered);
+        expect(config).not.toHaveProperty("temperature");
+        expect(config).not.toHaveProperty("topP");
+      }
+    });
+  }
+
+  test("a pinned 3.8 Flash still receives its original sampling parameters and output budget", async () => {
+    const request = await adapter.buildRequest({
+      modelId: "gemini-3.8-flash", stream: false, context: { messages: [{ role: "user", content: "hi" }] },
+      options: { maxOutputTokens: 109, temperature: 0.4, topP: 0.75 },
+    });
+    expect(new URL(request.url).pathname).toBe("/v1beta/models/gemini-3.8-flash:generateContent");
+    expect(JSON.parse(request.body).generationConfig).toMatchObject({ maxOutputTokens: 109, temperature: 0.4, topP: 0.75 });
   });
 });

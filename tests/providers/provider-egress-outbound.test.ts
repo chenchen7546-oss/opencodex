@@ -130,7 +130,7 @@ describe("per-provider egress on the discovery and quota transport", () => {
         { baseUrl: "https://provider.example", proxy: PROVIDER_PROXY },
         MODELS_URL, {}, dependencies,
       );
-      expect(proxied.calls).toEqual([`${PROVIDER_PROXY}/`]);
+      expect(proxied.calls).toEqual([{ url: `${PROVIDER_PROXY}/`, respectNoProxy: false }]);
     } finally {
       proxied.restore();
     }

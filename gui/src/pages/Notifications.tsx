@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { useRenderTargetCapture } from "../use-render-target-capture";
+import { targetFetch } from "../api";
 import { useT, type TKey } from "../i18n/shared";
 import { EmptyState, Notice, Switch } from "../ui";
 import { IconMail, IconPlus, IconRefresh, IconTrash } from "../icons";
@@ -23,10 +25,11 @@ const messages: Record<string, TKey> = {
   settings_conflict: "mail.conflictError", notification_busy: "mail.busyError", cancelled: "mail.cancelled",
 };
 
-export default function Notifications({ apiBase }: { apiBase: string }) {
-  return <NotificationsPanel key={apiBase} apiBase={apiBase} />;
+export default function Notifications({ apiBase, targetKey }: { apiBase: string; targetKey?: string }) {
+  return <NotificationsPanel key={apiBase} apiBase={apiBase} targetKey={targetKey} />;
 }
-function NotificationsPanel({ apiBase }: { apiBase: string }) {
+function NotificationsPanel({ apiBase, targetKey }: { apiBase: string; targetKey?: string }) {
+  const capture = useRenderTargetCapture(apiBase, targetKey);
   const t = useT();
   const [snapshot, setSnapshot] = useState<Snapshot>();
   const [draft, setDraft] = useState<Settings>();
@@ -45,13 +48,13 @@ function NotificationsPanel({ apiBase }: { apiBase: string }) {
   }
   useEffect(() => {
     const controller = new AbortController(); lifecycle.current = controller; acting.current = false;
-    void fetch(`${apiBase}/api/notifications`, { signal: controller.signal }).then(async (response) => {
+    void targetFetch(capture, `${apiBase}/api/notifications`, { signal: controller.signal }).then(async (response) => {
       const value = await response.json();
       if (controller.signal.aborted) return;
       if (!response.ok) setError(value.error ?? "notification_unavailable"); else adopt(value);
     }).catch(() => { if (!controller.signal.aborted) setError("notification_unavailable"); });
     return () => controller.abort();
-  }, [apiBase]);
+  }, [apiBase, capture]);
   useEffect(() => {
     if (!dirty) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
@@ -63,7 +66,7 @@ function NotificationsPanel({ apiBase }: { apiBase: string }) {
     const controller = lifecycle.current;
     acting.current = true; setBusy(true); setError(""); setNotice("");
     try {
-      const response = await fetch(`${apiBase}/api/notifications${path}`, { method, signal: controller?.signal,
+      const response = await targetFetch(capture, `${apiBase}/api/notifications${path}`, { method, signal: controller?.signal,
         ...(body !== undefined ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}) });
       const value = await response.json();
       if (controller !== lifecycle.current || controller?.signal.aborted) return;

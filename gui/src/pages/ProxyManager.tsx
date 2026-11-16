@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRenderTargetCapture } from "../use-render-target-capture";
+import { targetFetch } from "../api";
 import { useT } from "../i18n/shared";
 import { EmptyState, Notice } from "../ui";
 import { IconCheck, IconDownload, IconLink, IconPlus, IconRefresh, IconSearch, IconServer } from "../icons";
@@ -8,7 +10,8 @@ import { AccountIdentity } from "./proxy-manager/AccountIdentity";
 import { accountDisplayName, bytes, keyOf, type Choice, type Profile, type Snapshot, type Traffic } from "./proxy-manager/types";
 import "./proxy-manager/styles.css";
 
-export default function ProxyManager({ apiBase }: { apiBase: string }) {
+export default function ProxyManager({ apiBase, targetKey }: { apiBase: string; targetKey?: string }) {
+  const capture = useRenderTargetCapture(apiBase, targetKey);
   const t = useT();
   const [data, setData] = useState<Snapshot>();
   const [traffic, setTraffic] = useState<Traffic>();
@@ -29,7 +32,7 @@ export default function ProxyManager({ apiBase }: { apiBase: string }) {
   const request = useCallback(
     async <T,>(path: string, method = "GET", body?: unknown): Promise<T> => {
       const controller = lifetime.current;
-      const response = await fetch(`${apiBase}/api/proxy-manager${path}`, {
+      const response = await targetFetch(capture, `${apiBase}/api/proxy-manager${path}`, {
         method,
         signal: controller?.signal,
         headers: body === undefined ? undefined : { "Content-Type": "application/json" },
@@ -41,7 +44,7 @@ export default function ProxyManager({ apiBase }: { apiBase: string }) {
       if (!response.ok) throw new Error(typeof value.error === "string" ? value.error : `HTTP ${response.status}`);
       return value;
     },
-    [apiBase],
+    [apiBase, capture],
   );
   const load = useCallback(async () => {
     const epoch = generation.current;
@@ -418,7 +421,7 @@ export default function ProxyManager({ apiBase }: { apiBase: string }) {
                       />
                     </td>
                     <td>
-                      <AccountIdentity row={row} apiBase={apiBase} busy={busy} act={act} />
+                      <AccountIdentity row={row} capture={capture} busy={busy} act={act} />
                     </td>
                     <td>{row.account.provider}</td>
                     <td>{choiceName(row.choice, row.account.id === "@new")}</td>
