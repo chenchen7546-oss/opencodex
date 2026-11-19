@@ -2,6 +2,7 @@ import { publishCredentialSync } from "../local-credentials/generation";
 import { fetch } from "../lib/account-fetch";
 import { accountEgressInit } from "../lib/account-egress";
 import { captureMainAccountIdentityGeneration, getMainQuotaCredentialGeneration, isMainAccountIdentityGenerationLive, isMainQuotaWriterLive, matchesMainQuotaCredential, observeMainDecisionCredentialUsable, type MainQuotaWriter } from "./main-account-cache";
+import { observeMainCodexAccountIdentity } from "./account-lifecycle";
 import { classifyChatgptRefreshFailure, noteChatgptRefreshFailure } from "./chatgpt-refresh-failure";
 import { readBoundedResponseBody } from "../lib/bounded-body";
 import { createHash } from "node:crypto";
@@ -246,7 +247,6 @@ function readMainAuthJsonCredential(options: MainAuthJsonReadOptions = {}): Main
   const codexHome = resolveCodexHomeDir();
   const path = resolveWriteTarget(join(codexHome, "auth.json"));
   const owner = { codexHome, path };
-  const ticket = options.retainWith === undefined ? beginNativeMainObservation() : options.retainWith;
   const observation = observeNativeMainAuthFile(path);
   if (observation.kind === "complete") {
     const { raw, root, tokens } = observation;
@@ -264,6 +264,12 @@ function readMainAuthJsonCredential(options: MainAuthJsonReadOptions = {}): Main
       ...(refreshToken ? { refreshToken } : {}),
       chatgptAccountId: extractAccountId(idToken, accessToken) ?? nonEmptyString(tokens.account_id) ?? "",
     };
+    // Finish the owned identity transition, including prior-account cleanup, before capturing
+    // retention. Write guards and explicit pre-exchange tickets keep their existing authority.
+    if (options.serveRetained && credential.identity && !isNativeMainTrafficBlocked()) {
+      observeMainCodexAccountIdentity(credential.chatgptAccountId);
+    }
+    const ticket = options.retainWith === undefined ? beginNativeMainObservation() : options.retainWith;
     if (ticket) {
       retainNativeMainLogin(ticket, owner, credential.identity, credential, {
         fingerprint: credential.rawSha256,
@@ -774,7 +780,6 @@ async function refreshThroughCodex(
   codexHome: string,
   refresh = true,
 ): Promise<{ accessToken: string; chatgptAccountId: string } | null> {
-  // Deferred to keep lifecycle's cache/plan cleanup off this module's load-time import cycle.
   const { observeCodexOwnedMainAccountCredential } = await import("./account-lifecycle");
   if (resolveCodexHomeDir() !== codexHome) throw new MainAuthJsonChangedDuringRefreshError();
   const identityGeneration = captureMainAccountIdentityGeneration();

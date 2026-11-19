@@ -309,7 +309,7 @@ export async function fetchProviderModelsWithAuth(
         .catch(() => ({ apiKey: undefined, observed: false }))
       : {
         apiKey: effectiveGoogleMode(name, prov) === "vertex"
-          ? (vertexAuth = await resolveVertexDiscoveryAuth(prov, vertexDeadline, name))?.token
+          ? (vertexAuth = await resolveVertexDiscoveryAuth(prov, vertexDeadline, { providerName: name }))?.token
           : await resolveModelsAuthToken(name, prov),
         observed: false,
       }
@@ -764,9 +764,9 @@ export async function fetchProviderModelsWithAuth(
     // name matches any baseUrl by design. Retargeted or renamed custom rows
     // fetch a different URL and keep the rejection.
     if (!maySendAnthropicDiscovery()) return observed(withConfiguredRetention(failedDiscoveryConfigured), "degraded");
-    const outboundDependencies = { isCanonicalUrl: isRegistryModelDiscoveryUrl,
+    const outboundDependencies = (requestUrl: string) => ({ isCanonicalUrl: isRegistryModelDiscoveryUrl,
       beforeSend: () => maySendAnthropicDiscovery()
-        && (!vertexSendGuard || (vertexAuth !== undefined && vertexDiscoveryAuthIsCurrent(prov, vertexAuth, headers))) };
+        && (!vertexSendGuard || (vertexAuth !== undefined && vertexDiscoveryAuthIsCurrent(prov, vertexAuth, headers, requestUrl))) });
     const scope = dispatchEgressScope(name, prov, auth.oauthAccountId
       ? { kind: "oauth", snapshot: { provider: name, accountId: auth.oauthAccountId } } : undefined);
     const discoveryEgress = accountEgressInit({ ...scope, purpose: "probe" });
@@ -776,11 +776,11 @@ export async function fetchProviderModelsWithAuth(
         ...discoveryEgress, headers,
         body: JSON.stringify({ project }),
         signal: AbortSignal.timeout(8000),
-      }, outboundDependencies)
+      }, outboundDependencies(url))
       : await providerOutboundGet(name, prov, url, {
         ...discoveryEgress, headers,
         signal: vertexDeadline ?? AbortSignal.timeout(8000),
-      }, outboundDependencies);
+      }, outboundDependencies(url));
     const redirectError = await providerRedirectError(res, url);
     if (redirectError) {
       const { models, fallback, shouldLog } = failedDiscoveryFallback({ reason: "http", httpStatus: res.status });
@@ -881,7 +881,7 @@ export async function fetchProviderModelsWithAuth(
     const listing = effectiveGoogleMode(name, prov) === "vertex"
       ? await collectVertexPublisherModelPages(url, bounded.value,
         { ...discovery, firstPageBytes: vertexFirstPage?.bytes(), signal: vertexDeadline },
-        (pageUrl, signal) => providerOutboundGet(name, prov, pageUrl, { ...discoveryEgress, headers, signal }, outboundDependencies))
+        (pageUrl, signal) => providerOutboundGet(name, prov, pageUrl, { ...discoveryEgress, headers, signal }, outboundDependencies(pageUrl)))
       : { ok: true as const, value: bounded.value };
     if (!listing.ok) {
       const { models, fallback, shouldLog } = failedDiscoveryFallback({ reason: "invalid_response" });
