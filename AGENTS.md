@@ -2,6 +2,13 @@
 
 Guidance for AI agents (and humans) working on or reviewing this repository.
 
+## 定制仓库维护规则：上游优先
+
+- 每次功能开发、修复或兼容性调整前，先同步定制仓库和 OpenCodex 官方上游，核查正式版、开发分支及相关 PR。向用户说明找到的版本或提交、已有行为，以及它能否满足本次需求。
+- 上游已经实现的功能直接合并或回移对应提交，沿用其行为与测试，保留提交来源。明确区分已发布、仅开发分支已合并、仍在评审的实现。
+- 上游只能满足部分需求时，先采用可复用的部分。编写定制代码前，向用户说明剩余缺口、拟修改的位置、对现有功能的影响及验证方式。上游实现与现有部署有冲突或无法实测时，先报告具体问题。
+- 后续升级时重新核对已有定制是否已被上游覆盖。验证常用入口及受影响的定制功能，分别报告已通过、失败和未验证的项目；完成后将代码推送到用户的定制仓库。
+
 ## What this project is
 
 opencodex (`ocx`) is a universal provider proxy for OpenAI Codex and Claude Code:
