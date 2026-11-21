@@ -39,8 +39,8 @@ if (mode === "seed") {
       "fixture-b": { ...provider, apiKey: "fixture-upstream-key-b" },
       "fixture-gemini": {
         adapter: "google", authMode: "key", baseUrl: "http://gemini.fixture.test", apiKey: "fixture-google-key",
-        models: ["gemini-4-hydrogen", "gemini-4-carbon", "gemini-4-argon", "gemini-3.8-flash"], liveModels: false,
-        modelReasoningEfforts: { "gemini-4-hydrogen": ["low", "medium", "high", "xhigh"] },
+        models: ["gemini-4-neon", "gemini-4-hydrogen", "gemini-4-carbon", "gemini-4-argon", "gemini-3.8-flash"], liveModels: false,
+        modelReasoningEfforts: { "gemini-4-neon": ["low", "medium", "high", "xhigh"], "gemini-4-hydrogen": ["low", "medium", "high", "xhigh"] },
       },
     },
     defaultProvider: "fixture-a",
@@ -208,7 +208,7 @@ if (mode === "seed") {
             const config = request.generationConfig ?? {};
             const valid = request.contents?.length > 0
               && /x-goog-api-key:\s*fixture-google-key\s*$/im.test(headers)
-              && (model !== "gemini-4-hydrogen" || config.thinkingConfig?.thinkingLevel === "xhigh");
+              && (!["gemini-4-hydrogen", "gemini-4-neon"].includes(model) || config.thinkingConfig?.thinkingLevel === "xhigh");
             const reply = { candidates: [{ content: { role: "model", parts: [{ text: label }] }, finishReason: "STOP" }] };
             const body = stream ? `data: ${JSON.stringify(reply)}\n\n` : JSON.stringify(reply);
             socket.end(`HTTP/1.1 ${valid ? "200 OK" : "400 Bad Request"}\r\nContent-Type: ${stream ? "text/event-stream" : "application/json"}\r\nContent-Length: ${Buffer.byteLength(body)}\r\nConnection: close\r\n\r\n${body}`);
@@ -297,7 +297,7 @@ if (mode === "seed") {
           body: JSON.stringify({
             model: `${provider}/${id}`,
             ...(chat ? { messages: [{ role: "user", content: "Synthetic fixture only" }] } : { input: "Synthetic fixture only" }),
-            ...(id === "gemini-4-hydrogen" && (chat ? { reasoning_effort: "xhigh" } : { reasoning: { effort: "xhigh" } })),
+            ...(["gemini-4-hydrogen", "gemini-4-neon"].includes(id) && (chat ? { reasoning_effort: "xhigh" } : { reasoning: { effort: "xhigh" } })),
             stream,
           }),
         });
@@ -326,7 +326,7 @@ if (mode === "seed") {
       const listed = await fetch(`${origin}/v1/models`, { headers: { "x-opencodex-api-key": dataToken } });
       const catalog = await listed.json() as { data: Array<{ id: string }> };
       check(listed.ok && catalog.data.some(row => row.id === "fixture-gemini/gemini-4-hydrogen"), "Gemini 4 catalog missing");
-      for (const id of ["gemini-4-hydrogen", "gemini-4-carbon", "gemini-4-argon", "gemini-3.8-flash"]) {
+      for (const id of ["gemini-4-neon", "gemini-4-hydrogen", "gemini-4-carbon", "gemini-4-argon", "gemini-3.8-flash"]) {
         for (const chat of [false, true]) {
           const result = await model("fixture-gemini", id, chat, chat);
           check(result.status === 200 && result.body.includes("via-mihomo-proxy"), `Gemini route failed (${id}, ${chat}, ${result.status})`);

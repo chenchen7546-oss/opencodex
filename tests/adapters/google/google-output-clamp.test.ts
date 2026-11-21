@@ -54,6 +54,7 @@ describe("Gemini Developer API compatibility for existing clients", () => {
     adapter: "google", baseUrl: "https://generativelanguage.googleapis.com", apiKey: "fixture",
   }));
   const cases = [
+    { id: "gemini-4-neon", effort: "xhigh", buffered: 65536 },
     { id: "gemini-4-hydrogen", effort: "xhigh", buffered: 65536 },
     { id: "gemini-4-carbon", effort: "high", buffered: 32768 },
     { id: "gemini-4-argon", effort: "high", buffered: 32768 },

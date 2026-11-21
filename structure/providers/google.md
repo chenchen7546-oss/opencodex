@@ -51,7 +51,7 @@ The resolved number then takes the ordinary project path, so the replay namespac
 project. ADC rejects `"auto"`.
 `tests/adapters/google/google-vertex-key-project.test.ts` covers these cases.
 
-AI Studio advertises Hydrogen, Carbon and Argon alongside the existing Gemini 3 rows. For those three Gemini 4 models, `src/adapters/google.ts` drops sampling controls and caps an explicit Developer API buffered request at the documented per-hop output limit. The Vertex public OAuth exchange and each page of model discovery carry the selected account egress. The GCE metadata lookup stays local. A shared Vertex credential can reuse a completed token, while in-flight exchanges for different account bindings remain separate.
+AI Studio advertises Neon, Hydrogen, Carbon and Argon alongside the existing Gemini 3 rows. For those four Gemini 4 models, `src/adapters/google.ts` drops sampling controls and caps an explicit Developer API buffered request at the documented per-hop output limit. The Vertex public OAuth exchange and each page of model discovery carry the selected account egress. The GCE metadata lookup stays local. A shared Vertex credential can reuse a completed token, while in-flight exchanges for different account bindings remain separate.
 
 ## Vertex model discovery
 

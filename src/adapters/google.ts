@@ -1072,7 +1072,7 @@ export function createGoogleAdapter(provider: OcxProviderConfig): ProviderAdapte
       const identityModelId = provider.googleMode === "cloud-code-assist" ? routedModelId : parsed.modelId;
       const isCloudCodeAssist = provider.googleMode === "cloud-code-assist";
       const publicGemini4 = !isCloudCodeAssist && (
-        parsed.modelId === "gemini-4-argon" || parsed.modelId === "gemini-4-carbon" || parsed.modelId === "gemini-4-hydrogen"
+        parsed.modelId === "gemini-4-argon" || parsed.modelId === "gemini-4-carbon" || parsed.modelId === "gemini-4-hydrogen" || parsed.modelId === "gemini-4-neon"
       );
       const stripRejectedClaudeSdkParagraph = isCloudCodeAssist
         && rejectsClaudeSdkParagraph(parsed.modelId, routedModelId);
@@ -1100,7 +1100,8 @@ export function createGoogleAdapter(provider: OcxProviderConfig): ProviderAdapte
       const clampedMaxOutputTokens = clampGoogleMaxOutputTokens(identityModelId, parsed.options.maxOutputTokens);
       if (clampedMaxOutputTokens !== undefined) {
         // Carbon and Argon on the Gemini Developer API accept 32K per buffered REST hop.
-        const buffered32k = publicGemini4 && provider.googleMode !== "vertex" && !parsed.stream && parsed.modelId !== "gemini-4-hydrogen";
+        const buffered32k = publicGemini4 && provider.googleMode !== "vertex" && !parsed.stream
+          && (parsed.modelId === "gemini-4-carbon" || parsed.modelId === "gemini-4-argon");
         generationConfig.maxOutputTokens = buffered32k ? Math.min(clampedMaxOutputTokens, 32_768) : clampedMaxOutputTokens;
       }
       if (!publicGemini4) {
