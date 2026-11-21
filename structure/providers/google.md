@@ -10,6 +10,13 @@ UTF-8 encoding or rescanning of the growing prefix. The existing per-frame limit
 requirements and heartbeat batching remain in force. Replacement strings, including decoder
 EOF output, retain the [shared byte-accounting contract](../transports/byte-accounting.md#stream-buffer-accounting).
 
+## Reported usage
+
+`src/adapters/google-usage.ts` normalizes `usageMetadata` for the Google adapter and the native
+Gemini route. Prompt and tool-use prompt tokens count as input. Candidate and thought tokens
+count as output, with cached input and thought tokens also available as separate counters.
+The parser retains only valid numeric counters.
+
 ## Vertex API-key endpoint selection
 
 Vertex requests may use host ADC without an API key. The ambient API key stays out of generic provider configuration: `src/providers/vertex-environment-authority.ts` keeps a keyed process-local digest and observed generation with the selected route, and only the Google adapter reads the key. For ADC, routed project and location are captured and rechecked before dispatch. `src/lib/gcp-adc.ts` identifies file and marker sources by keyed content digest and observed generation, checks the source before and after token exchange, and binds its identity to the built request. Shared token refresh has independently cancellable waiters. `src/server/responses/request-transport.ts` checks the provider and request binding after pacing, transfers it on rebuild, and checks the final selection, target and credential after plugin rewrites. The `project: "auto"` auxiliary probe checks the same selection before sending. Unreadable credentials fail closed. A service-account marker selects its named credential instead of the ambient key. Metadata identity changes and an external A→B→A change entirely between observations cannot be detected locally. `tests/adapters/google/gcp-adc.test.ts` covers synthetic key, ADC and physical-dispatch boundaries.
@@ -51,7 +58,7 @@ The resolved number then takes the ordinary project path, so the replay namespac
 project. ADC rejects `"auto"`.
 `tests/adapters/google/google-vertex-key-project.test.ts` covers these cases.
 
-AI Studio advertises Neon, Hydrogen, Carbon and Argon alongside the existing Gemini 3 rows. For those four Gemini 4 models, `src/adapters/google.ts` drops sampling controls and caps an explicit Developer API buffered request at the documented per-hop output limit. The Vertex public OAuth exchange and each page of model discovery carry the selected account egress. The GCE metadata lookup stays local. A shared Vertex credential can reuse a completed token, while in-flight exchanges for different account bindings remain separate.
+The Vertex public OAuth exchange and each page of model discovery carry the selected account egress. The GCE metadata lookup stays local. A shared Vertex credential can reuse a completed token, while in-flight exchanges for different account bindings remain separate.
 
 ## Vertex model discovery
 
@@ -76,7 +83,9 @@ that credential, whose ADC source or generation, or ambient `GOOGLE_CLOUD_API_KE
 changed since it was read (the same `bindVertexRequestAuthority` / `vertexRequestAuthorityIsCurrent`
 record inference checks, so a replaced host ADC file or marker credential, or an A→B→A change of the
 variable that inference observed, stops the next page), or whose headers place it in the
-other scheme's header. One deadline (`vertexDiscoveryDeadline`, 8 s, also
+other scheme's header. Full gather admission compares the ADC source generation or ambient key
+generation, so an observed rotation starts a separate listing even when the credential bytes
+match an older flight. A response from a revoked credential cannot update discovery state. One deadline (`vertexDiscoveryDeadline`, 8 s, also
 tied to the request for the management probe) covers ADC token resolution, the first request and
 every follow-up page. `nextPageToken` is followed with three ceilings across all pages: five
 requests, the discovery row limit and the discovery byte limit, counted from the bytes actually
@@ -165,8 +174,6 @@ explicit wire summary none win. Eligible CCA, Vertex and direct Gemini requests 
 to their tool calls independently; they never become Anthropic thinking signatures.
 For CCA Argon summaries, the adapter also repeats the selected wire suffix tier as `thinkingLevel`;
 when summaries are disabled, Argon and the web-search sidecar retain their suffix-only request shape.
-
-CCA Gemini reads the available tools from `functionDeclarations` and the caller's choice from `functionCallingConfig`. Appending a second, generated tool catalog to the system instructions caused a reproducible Argon `429 RESOURCE_EXHAUSTED` before the first call. The adapter omits that generated paragraph on this path. Caller instructions, function descriptions, argument schemas, tool selections and call/result history travel through their existing fields.
 
 The visibility marker is the boolean `thought: true`, not the presence of a `thoughtSignature`
 or the wording of the text. An unmarked signed text part remains ordinary assistant output;
@@ -427,3 +434,63 @@ fetchable reference the proxy cannot vouch for is the SSRF-shaped half of this f
 
 `file_data` carries `file_uri` only. An earlier revision guessed a `mime_type` for it; the Files
 API already knows the type of what it stores, and a wrong guess is worse than no guess.
+
+## Google error classification
+
+`src/adapters/google-error-details.ts` reads the typed `google.rpc` details of a Google error body
+(bounded, never throwing): `ErrorInfo.reason`, `domain`, and a retry delay from `RetryInfo.retryDelay`, then
+`ErrorInfo.metadata.quotaResetDelay`, then a retry or reset delay in the message, in protobuf or Go duration
+syntax (`30s`, `0.5s`, `1h2m3s`, at most 30 days; a zero delay does not block the fallbacks). An untyped detail's
+reason is kept apart and never used for account decisions.
+
+`src/adapters/google-errors.ts` lets structured reasons outrank prose: `QUOTA_EXHAUSTED` and
+`INSUFFICIENT_G1_CREDITS_BALANCE` are quota exhaustion on every Google label (not retried), and `RATE_LIMIT_EXCEEDED`
+is a transient rate limit on Antigravity even when the prose sounds like quota, as CPA reads it; on AI Studio and
+Vertex the daily-quota prose still decides. `src/adapters/google-http.ts` validates the Fetch-normalized Retry-After
+once per retryable response. RFC 9110 delta-seconds (including zero) and HTTP-date forms take precedence.
+On a 429, an invalid or missing header falls back to the body delay. The effective delay supplies replay evidence
+and a floor for the next send.
+If it exceeds the retry ceiling, the request ends with the 429 carrying that advice as Retry-After. AI Studio keeps
+Google's body and status on raw 429s, including quota exhaustion. A 403 whose body is an object with code 403, `PERMISSION_DENIED`
+and a typed `ErrorInfo` `TOS_VIOLATION` entry becomes the fixed message
+`Antigravity account suspended (TOS_VIOLATION): ...`, which never echoes Google's appeal text; dispatch trusts only
+that leading prefix (`classifyAntigravityRefusal`) and quarantines only first-party Cloud Code Assist OAuth
+accounts when no upstream rewriter can have changed the destination. The account write uses the fenced path in
+[the transport inventory](../transports/inventory.md). Coverage: `tests/adapters/google/google-error-details.test.ts`,
+`google-errors.test.ts`, `google-retry-structured.test.ts`, `antigravity-refusal.test.ts`, and the TOS cases in
+`tests/server/server-google-antigravity-oauth-401-replay.test.ts`.
+
+## Google usage composition and finish outcomes
+
+`usageFromGemini` in `src/adapters/google.ts` reports output as `candidatesTokenCount + thoughtsTokenCount` and
+input as `promptTokenCount + toolUsePromptTokenCount`, so output includes reasoning as it does for every other
+adapter (telemetry, cost, the Claude and Chat encoders and the Gemini inbound codec subtract or clamp reasoning from
+that output). Tool-use prompt tokens count toward prompt-length pricing thresholds and Codex's context meter.
+
+`src/adapters/google-truncation.ts` owns the finish rules for every Google mode, stream and buffered alike.
+`isGoogleTruncatedTurn` fails a turn closed for `MALFORMED_FUNCTION_CALL`, for `MAX_TOKENS` after a started call, and
+for `UNEXPECTED_TOOL_CALL` or `MALFORMED_RESPONSE` when no visible output (non-thought text, an inline image or a
+function call) arrived anywhere in the turn. The error carries an explicit `status: 502` and `upstream_error`, so its
+HTTP outcome never depends on the message wording that `src/lib/errors.ts` otherwise matches; a zero-call failure is
+`replaySafeBeforeOutput` and the request log keeps the finish reason (`FAILURE_DETAIL_FINISH_REASONS` in
+`src/lib/failure-detail.ts`). `googleStopReason` maps `MAX_TOKENS` to `max_tokens` and the safety, recitation,
+image-safety and `MALFORMED_RESPONSE` finishes to `content_filter`. A response whose candidates are absent or empty
+and whose `promptFeedback.blockReason` is set becomes `googlePromptBlockedEvent`: HTTP 400
+`invalid_request_error` / `invalid_prompt`, which `src/bridge/terminal-refusal.ts` treats as a terminal refusal so
+Codex does not retry and a combo does not fail over. It names only the reason enum (anything outside `[A-Z_]` becomes
+`OTHER`) and never echoes `blockReasonMessage`. Coverage: `tests/adapters/google/google-finish-fidelity.test.ts`,
+`google-vertex-stream.test.ts` and `tests/adapters/adapter-usage.test.ts`.
+
+## Google request media, tool errors and Vertex hosts
+
+`messagesToGeminiFormat` in `src/adapters/google.ts` sends WAV and MP3 audio parts as `inline_data` (`audio/wav`,
+`audio/mp3`) on every Google mode except Claude models on Cloud Code Assist, which Antigravity translates into an
+Anthropic message with no audio block; those keep the part's text marker. `geminiToolResultParts` writes an
+`isError` tool result as `functionResponse.response.error` (Google's documented key for a failed call, and CPA's
+form on both its Gemini and Antigravity translators) and every other result as `response.result`; image placement is
+unchanged. Antigravity tool-result images keep the sibling layout above: CPA nests them in
+`functionResponse.parts`, but ADR-7279 extends nesting only with live upstream evidence for the route, which this
+unit did not have. `vertexHostForLocation` in `src/adapters/google-vertex-endpoint.ts` maps an already validated
+location to its inference authority: `global` → `aiplatform.googleapis.com`, `us`/`eu` →
+`aiplatform.<location>.rep.googleapis.com`, any region → `<location>-aiplatform.googleapis.com`; discovery and the
+express key-project probe stay on the global host. Coverage: `tests/adapters/google/google-request-fidelity.test.ts`.

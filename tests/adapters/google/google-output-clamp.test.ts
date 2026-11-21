@@ -54,13 +54,13 @@ describe("Gemini Developer API compatibility for existing clients", () => {
     adapter: "google", baseUrl: "https://generativelanguage.googleapis.com", apiKey: "fixture",
   }));
   const cases = [
-    { id: "gemini-4-neon", effort: "xhigh", buffered: 65536 },
-    { id: "gemini-4-hydrogen", effort: "xhigh", buffered: 65536 },
-    { id: "gemini-4-carbon", effort: "high", buffered: 32768 },
-    { id: "gemini-4-argon", effort: "high", buffered: 32768 },
+    { id: "gemini-4-neon", effort: "xhigh" },
+    { id: "gemini-4-hydrogen", effort: "xhigh" },
+    { id: "gemini-4-carbon", effort: "high" },
+    { id: "gemini-4-argon", effort: "high" },
   ];
-  for (const { id, effort, buffered } of cases) {
-    test(id + " honors the selected model, effort and synchronous output limit", async () => {
+  for (const { id, effort } of cases) {
+    test(id + " preserves upstream sampling and the Gemini output clamp", async () => {
       for (const stream of [false, true]) {
         const parsed: OcxParsedRequest = {
           modelId: id, stream, context: { messages: [{ role: "user", content: "hi" }] },
@@ -70,9 +70,7 @@ describe("Gemini Developer API compatibility for existing clients", () => {
         expect(new URL(request.url).pathname).toBe("/v1beta/models/" + id + ":" + (stream ? "streamGenerateContent" : "generateContent"));
         const config = JSON.parse(request.body).generationConfig;
         expect(config.thinkingConfig.thinkingLevel).toBe(effort);
-        expect(config.maxOutputTokens).toBe(stream ? 65536 : buffered);
-        expect(config).not.toHaveProperty("temperature");
-        expect(config).not.toHaveProperty("topP");
+        expect(config).toMatchObject({ maxOutputTokens: 65536, temperature: 0.5, topP: 0.9 });
       }
     });
   }

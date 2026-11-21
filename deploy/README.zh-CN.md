@@ -5,12 +5,13 @@
 
 ## 1. 本次交付与边界
 
-- 镜像：`opencodex-custom:20261121-1`，Linux amd64。镜像的确切 ID 见部署包 `release.json`。
+- 镜像：`opencodex-custom:20261121-2`，Linux amd64。镜像的确切 ID 见部署包 `release.json`。
 - 集成 Mihomo 1.19.33，构建时从官方 release 下载并核对固定 SHA-256；许可证在镜像 `/usr/share/licenses/mihomo/`。
 - 普通 HTTP/HTTPS/SOCKS5/SOCKS5h 不启动内核；高级节点按需启动一个进程，不启用 TUN，不暴露控制器端口。
 - 独立代理管理、账号绑定、跨提供商批量分配、订阅手动更新、出口检测、流量统计与限额均在管理页面操作。
 - 增加独立“邮箱通知”页面，支持通用 SMTP、多个收件邮箱独立启停、测试邮件和 Codex 重新认证提醒。
 - OAuth 服务器端验证、刷新、额度查询及模型 HTTP 请求使用绑定；浏览器自身登录网页的出口仍由浏览器网络决定。
+- 使用账号代理时，请保持上游的 `protocols.rollout.geminiNativeAntigravity` 为 `false`（默认值）。原生 Gemini 转发尚未接入账号代理。Codex 客户端沿用现有的 `/v1/responses` 入口。
 - Claude CLI、CodeBuddy、Qoder 等外部命令行适配器沿用自身网络设置，账号代理不能控制其子进程连接。
 - 流量统计是应用请求／响应正文量，包含检测与重试，不等于运营商计费流量。
 - 复制登录链接已修复原生弹窗里的回退路径；浏览器完全拒绝复制时会提供可全选的手动复制框。
@@ -56,21 +57,21 @@ Docker 29 的存储可能同时涉及 `/var/lib/docker` 与 `/var/lib/containerd
 
 ## 3. 上传并验证部署包
 
-本机生成目录为 `dist/custom/opencodex-custom-20261121-1/`，里面包含镜像归档、Compose、环境变量示例、本指南、版本和验收记录。
+本机生成目录为 `dist/custom/opencodex-custom-20261121-2/`，里面包含镜像归档、Compose、环境变量示例、本指南、版本和验收记录。
 先在服务器创建部署父目录，然后在 Windows PowerShell 上传；替换 `SERVER_IP` 和登录用户：
 
 ```powershell
 ssh root@SERVER_IP "mkdir -p /opt/opencodex-custom/releases"
-scp -r .\dist\custom\opencodex-custom-20261121-1 root@SERVER_IP:/opt/opencodex-custom/releases/
+scp -r .\dist\custom\opencodex-custom-20261121-2 root@SERVER_IP:/opt/opencodex-custom/releases/
 ```
 
 在服务器运行：
 
 ```bash
-cd /opt/opencodex-custom/releases/opencodex-custom-20261121-1
+cd /opt/opencodex-custom/releases/opencodex-custom-20261121-2
 sha256sum -c SHA256SUMS
 sudo docker load --input opencodex-image.tar.gz
-sudo docker image inspect opencodex-custom:20261121-1 --format '{{.Id}} {{.Os}}/{{.Architecture}}'
+sudo docker image inspect opencodex-custom:20261121-2 --format '{{.Id}} {{.Os}}/{{.Architecture}}'
 cat release.json
 ```
 
@@ -189,12 +190,12 @@ umask 077
 backup_dir="/opt/opencodex/backups/$(date -u +%Y%m%dT%H%M%SZ)"
 mkdir -p "$backup_dir"
 dc stop
-sudo docker run --rm --user 0 --entrypoint tar --mount type=volume,source=opencodex-custom_ocx-state,target=/state,readonly opencodex-custom:20261121-1 -C /state -czf - . > "$backup_dir/ocx-state.tar.gz"
-sudo docker run --rm --user 0 --entrypoint tar --mount type=volume,source=opencodex-custom_codex-state,target=/state,readonly opencodex-custom:20261121-1 -C /state -czf - . > "$backup_dir/codex-state.tar.gz"
+sudo docker run --rm --user 0 --entrypoint tar --mount type=volume,source=opencodex-custom_ocx-state,target=/state,readonly opencodex-custom:20261121-2 -C /state -czf - . > "$backup_dir/ocx-state.tar.gz"
+sudo docker run --rm --user 0 --entrypoint tar --mount type=volume,source=opencodex-custom_codex-state,target=/state,readonly opencodex-custom:20261121-2 -C /state -czf - . > "$backup_dir/codex-state.tar.gz"
 tar -tzf "$backup_dir/ocx-state.tar.gz" >/dev/null
 tar -tzf "$backup_dir/codex-state.tar.gz" >/dev/null
 cp .env "$backup_dir/deploy.env"
-sudo docker image inspect opencodex-custom:20261121-1 --format '{{.Id}}' > "$backup_dir/image-id.txt"
+sudo docker image inspect opencodex-custom:20261121-2 --format '{{.Id}}' > "$backup_dir/image-id.txt"
 dc start
 ```
 
@@ -206,8 +207,8 @@ dc start
 ```bash
 sudo docker volume create opencodex-restore_ocx-state
 sudo docker volume create opencodex-restore_codex-state
-sudo docker run --rm -i --user 0 --entrypoint tar --mount type=volume,source=opencodex-restore_ocx-state,target=/state opencodex-custom:20261121-1 -C /state -xzpf - < "$backup_dir/ocx-state.tar.gz"
-sudo docker run --rm -i --user 0 --entrypoint tar --mount type=volume,source=opencodex-restore_codex-state,target=/state opencodex-custom:20261121-1 -C /state -xzpf - < "$backup_dir/codex-state.tar.gz"
+sudo docker run --rm -i --user 0 --entrypoint tar --mount type=volume,source=opencodex-restore_ocx-state,target=/state opencodex-custom:20261121-2 -C /state -xzpf - < "$backup_dir/ocx-state.tar.gz"
+sudo docker run --rm -i --user 0 --entrypoint tar --mount type=volume,source=opencodex-restore_codex-state,target=/state opencodex-custom:20261121-2 -C /state -xzpf - < "$backup_dir/codex-state.tar.gz"
 sudo docker compose --project-name opencodex-restore --env-file .env -f compose.yaml up -d --wait --no-build
 ```
 
@@ -226,8 +227,8 @@ sudo docker compose --project-name opencodex-restore --env-file .env -f compose.
 ```bash
 bun scripts/generate-compatibility-version.ts
 docker compose -f deploy/compose.build.yaml build hub
-bun scripts/custom/docker-smoke.ts opencodex-custom:20261121-1
-bun scripts/custom/export-image.ts opencodex-custom:20261121-1
+bun scripts/custom/docker-smoke.ts opencodex-custom:20261121-2
+bun scripts/custom/export-image.ts opencodex-custom:20261121-2
 ```
 
 导出脚本要求镜像 ID 与成功验收记录相同；已有输出目录不会被覆盖。修改源码后使用新标签并重新验收。

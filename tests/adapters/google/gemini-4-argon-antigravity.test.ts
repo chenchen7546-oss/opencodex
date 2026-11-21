@@ -64,7 +64,7 @@ afterEach(() => {
 
 describe("Gemini 4 Argon on Antigravity", () => {
   test.each(["gemini-4-argon", "gemini-4-carbon", "gemini-4-hydrogen", "gemini-3.8-flash"])(
-    "%s sends the native catalog once and keeps caller-authored tool instructions",
+    "%s keeps the native declarations, upstream tool catalog and caller instructions",
     async model => {
       const req = parsedWithEffort(model, "low");
       const instructions = "Tool contract: keep the user's verification code private.";
@@ -79,7 +79,7 @@ describe("Gemini 4 Argon on Antigravity", () => {
       const declaration = first.tools[0].functionDeclarations[0];
       expect(declaration).toMatchObject(req.context.tools[0]!);
       expect(first.systemInstruction.parts[0].text).toContain(instructions);
-      expect(first.systemInstruction.parts[0].text).not.toContain("Valid tool names for this turn are exactly");
+      expect(first.systemInstruction.parts[0].text).toContain("Valid tool names for this turn are exactly");
       expect(first.toolConfig).toBeUndefined();
 
       req.context.messages.push(

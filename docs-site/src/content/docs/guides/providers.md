@@ -279,14 +279,6 @@ The Antigravity Accounts tab shows an observed membership tier as a badge beside
 label, using the upstream tier ID (for example `free-tier` or `gemini-pro`). No badge appears
 when the plan is unknown; it does not affect routing or quota.
 
-The `google` (AI Studio) preset also lists `gemini-4-hydrogen` and `gemini-4-carbon`.
-Hydrogen supports low, medium, high (default) and xhigh. Carbon and Argon use low, medium (default)
-and high. An existing default model or explicit model list stays selected. Add the desired ID to a
-pinned list, or use model discovery for your account. AI Studio and Vertex omit legacy sampling controls for these Gemini 4 models.
-The Developer API supports 65,536 tokens per streaming hop for these models. For buffered REST,
-Hydrogen supports 65,536 and Carbon and Argon support 32,768. [Google migration guide](https://aistudio.google.com/docs/whats-new-gemini-4-hydrogen)
-
-Antigravity Gemini sends functions through Google's native tool declarations and preserves the caller's system instructions. Both Responses and Chat Completions support returning a tool result using the call ID from the model's first reply. Keep tools enabled on the next turn if the model may need another function.
 
 Gemini 4 Argon (`gemini-4-argon`) is listed on the `google` preset with low, medium (the
 default), and high thinking levels. Google offers it on the paid Gemini API tier only, not the free
@@ -368,6 +360,8 @@ The ChatGPT passthrough catalog also layers in the bare GPT-5.6 Sol/Terra/Luna s
 (`gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna`) for accounts that can use them.
 
 ## 2. Account login (OAuth)
+
+For Microsoft work or school accounts, see [Microsoft 365 Copilot setup](/guides/m365-copilot/).
 
 Provider presets can use account login — including GitHub Copilot via an experimental unofficial
 device-flow bridge. opencodex stores their credentials in
@@ -608,6 +602,8 @@ distinct one. Kiro accounts use the profile ARN together with the signed-in user
 pool accounts have a separate ledger.
 Tokens stay in `~/.opencodex/auth.json`; `/api/oauth/accounts` returns masked metadata only.
 
+New Codex and Anthropic OAuth pool sessions can use [`reset-near-weighted`](/reference/configuration/providers/#reset-near-weighted) to favor weekly quota that will reset soon. Existing session bindings are preserved.
+
 ### Cockpit Tools Antigravity import
 
 For v1, OpenCodex imports only a **Cockpit Tools Antigravity** JSON export for the `google-antigravity` provider. In the Providers dashboard, choose the local JSON file from that provider's Accounts tab. The dashboard does not show the file contents or credential values; it reports only imported, updated, failed, and unsupported counts. Other Cockpit providers are rejected in v1.
@@ -701,18 +697,9 @@ the dashboard Codex account pool also performs. See
 
 ### Kiro request credits
 
-On tool-enabled turns, opencodex holds Kiro's ordinary text until completion is validated.
-If Kiro ends with plain text instead of its private final-answer tool, one bounded retry
-still runs, and only the resulting final answer is displayed. Progress accompanying a real
-tool call remains visible. A normal private final answer needs no completion retry.
-
-When Kiro's safety filter stops a turn (`CONTENT_FILTERED`, for example the Claude `BIO` classifier), the request ends as a refusal that clients do not retry: Claude clients see `stop_reason: "refusal"` and Codex sees a failed response carrying Kiro's category and explanation. If the filter stops the bounded retry, no final answer is displayed; the progress held from the first attempt and any partial text from the retry are shown as commentary before the refusal.
-
-When Kiro emits credit metering, request logs preserve the reported spend as
-`usage.providerCredits`, including in the persisted usage ledger. These are Kiro credits;
-token counts may still be estimated, and the credit value does not replace USD cost estimates.
-Completion fallback requests add their reported credits. An absent value means Kiro did not
-report credit usage; an explicit zero means it reported no spend.
+Kiro's completion guardrails, its safety-filter refusals and the credit metering that lands in
+request logs are covered in [Kiro request credits](/guides/kiro-request-credits/), beside how to
+price those credits in USD.
 
 ### Kiro refresh attention
 
@@ -808,6 +795,8 @@ are on the [API-key catalog](/guides/api-key-catalog/) page. Its sections:
 - [Official CodeBuddy Code CLI (Global & CN)](/guides/api-key-catalog/#official-codebuddy-code-cli-global--cn)
 - [Official Qoder CLI (Global & CN)](/guides/api-key-catalog/#official-qoder-cli-global--cn)
 - [Claude Code CLI (subscription)](/guides/api-key-catalog/#claude-code-cli-subscription)
+- [StepCode CLI (subscription)](/guides/step-cli/)
+- [Antigravity CLI (ACP, local)](/guides/api-key-catalog/#antigravity-cli-acp-local)
 - [A6API credit quota](/guides/api-key-catalog/#a6api-credit-quota)
 - [BigModel Coding Plan over Responses](/guides/api-key-catalog/#bigmodel-coding-plan-over-responses)
 - [Multiple API keys](/guides/api-key-catalog/#multiple-api-keys)
@@ -912,6 +901,13 @@ Providers with a live probe: OpenAI/Codex, Anthropic, xAI, Cursor, Kimi,
 Google Antigravity, OpenCode Go, OpenRouter, DeepSeek, ClinePass, Z.AI, MiniMax,
 Moonshot, Venice, Synthetic, DeepInfra, Neuralwatt, Command Code, and any a6api-backed
 or Abliteration custom provider.
+
+**Anthropic monthly usage.** Usage-based seats such as Enterprise can show a monthly
+extra-usage bar when Anthropic reports enabled extra usage and no plan windows. The reading
+comes without a reset date. The bar clears when Anthropic reports plan windows or confirms that
+extra usage is disabled. If the response supplies no usable quota window, the account quota check
+still reports that the reading is unavailable, including after a provider quota refresh receives
+the same response.
 
 **Kimi Coding Plan quota.** Account login and API-key providers on the canonical
 `https://api.kimi.com/coding/v1` endpoint read `/usages`. API-key providers on the regional

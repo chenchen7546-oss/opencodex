@@ -22,8 +22,11 @@ import {
 } from "../../adapters/cursor/discovery";
 import { cursorFastCapableBases } from "../../adapters/cursor/catalog";
 import { COMMAND_CODE_MODEL_REASONING_EFFORTS } from "../command-code-efforts";
+import { COMMAND_CODE_DECISION_MODEL_DISCOVERY_FILTER } from "../command-code-decision-models";
 import { isCanonicalOpenRouterTarget } from "../openrouter-routing";
 import type { ProviderRegistryEntry } from "./types";
+import { M365_COPILOT_BASE_URL } from "../m365-copilot-models";
+import { M365_COPILOT_WEB_URL } from "../m365-copilot-discovery";
 import type { AnthropicInstanceId } from "../anthropic-instance-id";
 import { ANTHROPIC_FAST_MODE_BETA } from "../anthropic-fast";
 import {
@@ -183,6 +186,13 @@ function anthropicOAuthEntry(id: AnthropicInstanceId, label: string): ProviderRe
 
 export const PROVIDER_REGISTRY_CORE: readonly ProviderRegistryEntry[] = [
   {
+    id: "m365-copilot", label: "Microsoft 365 Copilot", adapter: "m365-copilot", baseUrl: M365_COPILOT_BASE_URL,
+    authKind: "oauth", featured: false, dashboardPreset: true, dashboardUrl: "https://copilot.cloud.microsoft/", liveModels: true,
+    models: [], defaultModel: "Magic", inputModalities: ["text", "image"],
+    modelDiscovery: { url: M365_COPILOT_WEB_URL, maxResponseBytes: 2 * 1024 * 1024, maxModels: 256 },
+    note: "Experimental unofficial Microsoft 365 Copilot ChatHub connector. Work/school accounts only. Sign-in uses Microsoft's M365 Chat Client in an isolated Chrome, Chromium or Edge window and captures the Copilot web session locally. Models are discovered from your account's live chat picker. Tools are prompt-emulated and executed by your client. No Copilot Studio agents are created.",
+  },
+  {
     id: "openai",
     label: "OpenAI (Codex login)",
     adapter: "openai-responses",
@@ -223,7 +233,9 @@ export const PROVIDER_REGISTRY_CORE: readonly ProviderRegistryEntry[] = [
     // default on `high`, the picker would send `high` explicitly, and the request builder's
     // no-effort fallback to `kimi-k3-max` would never be reached. Mirrors the other K3
     // routes (kimi, kimi-code, opencode-go).
-    modelDefaultReasoningEfforts: { "kimi-k3": "max" },
+    // Gemini 4 Hydrogen defaults to `high` (Cursor's docs, and the google/google-vertex rows);
+    // without this the medium fallback would win. Carbon's documented default is medium.
+    modelDefaultReasoningEfforts: { "kimi-k3": "max", "gemini-4-hydrogen": "high" },
     // Blind Cursor models (Auto routers, Composer, GLM-5.2, GLM-5.3) go through the vision sidecar;
     // multimodal hosts (Claude/Gemini/GPT/Kimi/Grok) take native SelectedImage. The catalog
     // still advertises image for noVision members so Codex can attach (sidecar option B).
@@ -531,6 +543,9 @@ export const PROVIDER_REGISTRY_CORE: readonly ProviderRegistryEntry[] = [
       url: "https://api.commandcode.ai/provider/v1/models",
       maxResponseBytes: 262_144,
       maxModels: 256,
+      // System One decision models (typesafe/jev*) are listed here but served only at
+      // /provider/v1/systemone (#8997).
+      filter: COMMAND_CODE_DECISION_MODEL_DISCOVERY_FILTER,
     },
     // These are capability facts from official Command Code model profiles, not seeded models.
     // Unknown/new live models deliberately do not advertise a reasoning picker.
@@ -1246,7 +1261,7 @@ export const PROVIDER_REGISTRY_CORE: readonly ProviderRegistryEntry[] = [
   // devlog/_plan/260710_provider_hardening/001_research_frontier.md.
   {
     id: "google", label: "Google Gemini", adapter: "google", baseUrl: "https://generativelanguage.googleapis.com", authKind: "key", featured: true,
-    dashboardUrl: "https://aistudio.google.com/apikey", defaultModel: "gemini-3.5-flash", models: ["gemini-4-neon", "gemini-4-hydrogen", "gemini-4-carbon", "gemini-4-argon", "gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-pro-preview", "gemini-3.7-flash"],
+    dashboardUrl: "https://aistudio.google.com/apikey", defaultModel: "gemini-3.5-flash", models: ["gemini-4-argon", "gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-pro-preview", "gemini-3.7-flash"],
     modelContextWindows: { "gemini-4-neon": 1_048_576, "gemini-4-hydrogen": 1_048_576, "gemini-4-carbon": 1_048_576, "gemini-4-argon": 1_048_576, "gemini-3.8-flash": 1_048_576, "gemini-3.6-flash": 1_048_576, "gemini-3.5-flash": 1_000_000, "gemini-3.5-flash-lite": 1_048_576, "gemini-3.7-flash": 1_048_576 },
     modelInputModalities: { "gemini-4-neon": ["text", "image"], "gemini-4-hydrogen": ["text", "image"], "gemini-4-carbon": ["text", "image"], "gemini-4-argon": ["text", "image"], "gemini-3.8-flash": ["text", "image"], "gemini-3.6-flash": ["text", "image"], "gemini-3.5-flash-lite": ["text", "image"], "gemini-3.7-flash": ["text", "image"] },
     modelReasoningEfforts: { ...GEMINI_MODEL_REASONING_EFFORTS },

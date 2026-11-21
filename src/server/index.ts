@@ -6,6 +6,7 @@ import { normalizeBindHostname } from "./bind-host";
 import { configureInboundBodyBudget } from "./inbound-body-admission";
 import { createAdmittedHttpTurn } from "./admitted-http-turn";
 import { isOllamaNativePath } from "./ollama-native-paths";
+import { geminiRouteAllows, isGeminiNativePath, parseGeminiNativePath } from "./gemini-native-paths";
 import {
   buildWarmupCompletionFrames,
   buildWsErrorFrame,
@@ -35,6 +36,7 @@ import { migrateStartupReserveCapability } from "./reserve-capability-startup";
 import { migrateStartupXaiResponses } from "./xai-responses-startup";
 import { migrateStartupZaiResponses } from "./zai-responses-startup";
 import { reconcileOAuthProviders } from "../oauth";
+import { coolComboTargetForCommittedTerminal } from "../combos";
 import { withCatalogWriteSerialization } from "../codex/catalog-write-serialization";
 import { invalidateCodexModelsCacheWithPermit } from "../codex/catalog/sync";
 import { currentServiceHomes, serviceStatePathsForOpenCodexHome } from "../service";
@@ -116,6 +118,7 @@ import {
   inspectResponseLogSsePayload,
   nextRequestLogId,
   recordFirstOutput,
+  registerCommittedTerminalCooldownHandler,
   type RequestLogContext,
   type RequestLogEntry,
 } from "./request-log";
@@ -233,7 +236,9 @@ function startServerWithSpendLedgerOwner(port: number | undefined, deps: StartSe
   warnPlaintextV2AgentMessagesStartup(config);
   warnAgentTaskRecoveryStartup(config);
   setLiveStateStoreConfig(config);
-  applyProxyEnv(config, true); configureCustomExtensions(config);
+  registerCommittedTerminalCooldownHandler(coolComboTargetForCommittedTerminal);
+  applyProxyEnv(config, true);
+  configureCustomExtensions(config);
   assertServerAuthConfig(config);
   const managementAuth = deps.managementAuthState ?? initializeManagementAuthState(config);
   const managementSessionControl = createManagementSessionControl(managementAuth);
@@ -420,6 +425,10 @@ function startServerWithSpendLedgerOwner(port: number | undefined, deps: StartSe
       return req.method === "POST";
     }
     if (path === "/v1/models") return req.method === "GET";
+    // Gemini wire (#8732): `ocx connect agy` points the CLI at this socket. Same admission as the
+    // chat wire it is translated into; each Gemini path admits only its own HTTP method.
+    const gemini = parseGeminiNativePath(path);
+    if (gemini) return geminiRouteAllows(gemini, req.method);
     // Realtime voice — a directly-spawned `codex app-server` needs these for desktop voice
     // the same way it needs /v1/responses. Two shapes, same trust model as /v1/responses:
     //  - standalone sessions (codex-rs thread/realtime/start, WebSocket transport):
@@ -453,6 +462,8 @@ function startServerWithSpendLedgerOwner(port: number | undefined, deps: StartSe
     if (rawPath === "/opencodex-session") return req.method === "GET" || req.method === "POST";
     // Ollama-compatible inference paths are data plane, not management: never via Tailscale Serve.
     if (isOllamaNativePath(rawPath)) return false;
+    // Gemini-compatible inference paths are data plane too, and /v1beta/ is never a management route.
+    if (isGeminiNativePath(rawPath) || rawPath.startsWith("/v1beta/")) return false;
     if (rawPath.startsWith("/api/")) return true;
     if (req.method !== "GET" && req.method !== "HEAD") return false;
     let decodedPath: string;

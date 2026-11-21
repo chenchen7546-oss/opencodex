@@ -62,6 +62,20 @@ export type AgentTaskRecoveryResult =
   | { readonly recovered: true }
   | { readonly recovered: false; readonly reason: AgentTaskRecoveryFailureReason };
 
+interface RecoverySend {
+  model: string;
+  status: number | undefined;
+  durationMs: number;
+  usage: unknown;
+}
+
+interface AgentTaskRecoveryContext {
+  parentThreadId?: string | null;
+  abortSignal?: AbortSignal;
+  /** Only the caller that starts a flight observes its sends. */
+  onSend?: (send: RecoverySend) => void;
+}
+
 export function agentTaskRecoveryConfig(config: OcxConfig): AgentTaskRecoveryOptions | null {
   const raw = config.agentTaskRecovery;
   if (!raw || raw.enabled !== true) return null;
@@ -402,8 +416,9 @@ function sseDataPayloads(raw: string): string[] {
   return payloads;
 }
 
-function assignmentFromRecoverySse(raw: string, envelope: AgentEnvelope): string | null {
+function parseRecoverySse(raw: string, envelope: AgentEnvelope): { assignment: string | null; usage: unknown } {
   let assignment: string | null = null;
+  let usage: unknown;
   let completed = false;
   let terminalFailure = false;
   let conflictingAssignments = false;
@@ -421,6 +436,9 @@ function assignmentFromRecoverySse(raw: string, envelope: AgentEnvelope): string
       || event?.type === "response.incomplete"
       || event?.type === "error"
     ) terminalFailure = true;
+    if (event?.type === "response.completed" || event?.type === "response.failed" || event?.type === "response.incomplete") {
+      usage = event.response?.usage ?? usage;
+    }
     if (event?.type === "response.completed" && event.response?.status === "completed") {
       completed = true;
     }
@@ -455,9 +473,12 @@ function assignmentFromRecoverySse(raw: string, envelope: AgentEnvelope): string
       else if (assignment !== candidate) conflictingAssignments = true;
     }
   }
-  return completed && !terminalFailure && !conflictingAssignments && !malformedEvent && !invalidAssignment
-    ? assignment
-    : null;
+  return {
+    assignment: completed && !terminalFailure && !conflictingAssignments && !malformedEvent && !invalidAssignment
+      ? assignment
+      : null,
+    usage,
+  };
 }
 
 interface RecoveryAttempt {
@@ -473,20 +494,27 @@ async function attemptRecovery(
   signal: AbortSignal,
   abortSignal: AbortSignal | undefined,
   deadlineSignal: AbortSignal,
+  onSend: AgentTaskRecoveryContext["onSend"],
 ): Promise<RecoveryAttempt> {
   const terminal = (resolution: AgentTaskRecoveryResolution): RecoveryAttempt => ({
     resolution,
     retryable: false,
   });
+  const model = options.model ?? "gpt-5.6-sol";
+  const bodyPayload = recoveryPayload(envelope, model);
+  const startedAt = Date.now();
+  let status: number | undefined;
+  let usage: unknown;
   try {
     const response = await fetch(RECOVERY_ENDPOINT, {
       ...accountEgressInit({ provider: "openai", purpose: "model" }),
       method: "POST",
       headers: admission.headers,
-      body: recoveryPayload(envelope, options.model ?? "gpt-5.6-sol"),
+      body: bodyPayload,
       signal,
       redirect: "error",
     });
+    status = response.status;
     if (!response.ok) {
       // A rejected or never-settling cancellation must not extend the recovery deadline.
       try { void response.body?.cancel().catch(() => undefined); } catch { /* already closed */ }
@@ -509,7 +537,9 @@ async function attemptRecovery(
     if (abortSignal?.aborted) return terminal({ recovered: false, reason: "recovery_aborted" });
     if (deadlineSignal.aborted || body.timedOut) return terminal({ recovered: false, reason: "recovery_timeout" });
     if (body.truncated || body.oversized || !body.displaySafe) return terminal({ recovered: false, reason: "recovery_invalid_output" });
-    const assignment = assignmentFromRecoverySse(body.text, envelope);
+    const result = parseRecoverySse(body.text, envelope);
+    usage = result.usage;
+    const { assignment } = result;
     return terminal(assignment === null
       ? { recovered: false, reason: "recovery_invalid_output" }
       : { recovered: true, assignment });
@@ -520,6 +550,8 @@ async function attemptRecovery(
     return decodeFailure === "invalid_utf8"
       ? terminal({ recovered: false, reason: "recovery_invalid_output" })
       : { resolution: { recovered: false, reason: "recovery_transport_error" }, retryable: true };
+  } finally {
+    onSend?.({ model, status, durationMs: Date.now() - startedAt, usage });
   }
 }
 
@@ -527,7 +559,8 @@ async function requestRecovery(
   admission: RecoveryAdmission,
   envelope: AgentEnvelope,
   options: AgentTaskRecoveryOptions,
-  abortSignal?: AbortSignal,
+  abortSignal: AbortSignal | undefined,
+  onSend: AgentTaskRecoveryContext["onSend"],
 ): Promise<AgentTaskRecoveryResolution> {
   const controller = new AbortController();
   const timeoutMs = options.timeoutMs ?? 45_000;
@@ -547,7 +580,7 @@ async function requestRecovery(
       : 0;
     for (let attempt = 0; ; attempt += 1) {
       const { resolution, retryable, retryHeaders } = await attemptRecovery(
-        admission, envelope, options, signal, abortSignal, controller.signal,
+        admission, envelope, options, signal, abortSignal, controller.signal, onSend,
       );
       if (resolution.recovered || !retryable || attempt >= retries) return resolution;
       // Retry-After is the provider's floor, not something our backoff cap may shorten.
@@ -578,7 +611,7 @@ export async function recoverEncryptedAgentTask(
   input: unknown,
   options: AgentTaskRecoveryOptions,
   config: OcxConfig,
-  context: { parentThreadId?: string | null; abortSignal?: AbortSignal } = {},
+  context: AgentTaskRecoveryContext = {},
 ): Promise<boolean> {
   return (await recoverEncryptedAgentTaskWithResult(req, input, options, config, context)).recovered;
 }
@@ -589,7 +622,7 @@ export async function recoverEncryptedAgentTaskWithResult(
   input: unknown,
   options: AgentTaskRecoveryOptions,
   config: OcxConfig,
-  context: { parentThreadId?: string | null; abortSignal?: AbortSignal } = {},
+  context: AgentTaskRecoveryContext = {},
 ): Promise<AgentTaskRecoveryResult> {
   // Admission is deliberately checked before cache access. A cache hit must not
   // turn this process into a plaintext oracle for an unauthenticated caller.
@@ -599,7 +632,7 @@ export async function recoverEncryptedAgentTaskWithResult(
   const result = await resolveCachedAgentTaskRecoveryWithResult(
     cacheKey,
     options.cacheEntries ?? 200,
-    signal => requestRecovery(admission, envelope, options, signal),
+    signal => requestRecovery(admission, envelope, options, signal, context.onSend),
     context.abortSignal,
   );
   if (!result.recovered) {

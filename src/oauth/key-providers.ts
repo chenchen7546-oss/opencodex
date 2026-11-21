@@ -1,5 +1,6 @@
 import { fetch } from "../lib/account-fetch";
 import { currentAccountEgress, withAccountEgress } from "../lib/account-egress";
+import { isAgyAcpProvider } from "../config/schema/agy-acp-references";
 import type { OcxProviderConfig } from "../types";
 import { deriveKeyLoginMap, enrichProviderFromRegistry, type DerivedKeyLoginProvider } from "../providers/derive";
 import { providerModelsUrl, resolveProviderModelDiscoveryUrl } from "../providers/model-discovery";
@@ -74,6 +75,7 @@ export async function validateApiKey(
   provider: KeyLoginProvider,
   key: string,
 ): Promise<boolean | "unknown"> {
+  if (isAgyAcpProvider(providerName, provider)) return false;
   return withAccountEgress({...currentAccountEgress(),provider:providerName,purpose:"login"},()=>validateApiKeyThroughProxy(providerName,provider,key));
 }
 async function validateApiKeyThroughProxy(providerName:string,provider:KeyLoginProvider,key:string):Promise<boolean|"unknown"> {

@@ -22,6 +22,8 @@ export interface ProviderOutboundDependencies {
   resolveAddresses?: typeof resolvePublicAddresses;
   pinnedGet?: typeof pinnedHttpGet;
   pinnedPost?: typeof pinnedHttpPost;
+  /** Opt in to a bounded 4xx/5xx body on the pinned route. */
+  maxPinnedErrorBytes?: number;
   /**
    * Canonical-URL proof for the transparent fake-IP exception (Clash TUN mode
    * without proxy env). Injected so this transport core stays decoupled from
@@ -415,6 +417,7 @@ async function providerOutboundRequest(
     headers: init.headers,
     rejectUnauthorized: true,
     context: "provider response",
+    ...(dependencies.maxPinnedErrorBytes === undefined ? {} : { maxErrorBytes: dependencies.maxPinnedErrorBytes }),
   };
   const pinned = pickPinnedAddress(resolved.addresses);
   assertSendAllowed();

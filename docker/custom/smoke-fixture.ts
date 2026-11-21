@@ -117,6 +117,8 @@ if (mode === "seed") {
       "PASS: recreation retains bindings, traffic and token; core remains lazy.",
     );
   } else if (mode === "exercise") {
+    const protocols = await managementApi("/api/protocols");
+    check(protocols.settings.rollout.geminiNativeAntigravity === false, "Native Gemini would bypass account-bound egress");
     const codexConfig = join(process.env.CODEX_HOME!, "config.toml");
     check((statSync(codexConfig).mode & 0o777) === 0o600, "Codex config permissions incorrect");
     for (const mode of ["v1", "default"]) {
